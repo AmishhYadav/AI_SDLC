@@ -769,22 +769,22 @@ jobs:
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does `nest build` require any NestJS imports at the entry point?**
    - What we know: SWC builder is pure transpilation; `entryFile: "index"` maps to `src/index.ts`
    - What's unclear: Whether `@nestjs/cli`'s build command validates that the entry exports a NestJS module
-   - Recommendation: Use `src/index.ts` with `export * from '@repo/database'`; if `nest build` errors, fall back to `export {}` (empty module proves compilation without resolving anything)
+   - RESOLVED: Use `src/index.ts` with `export * from '@repo/database'`; if `nest build` errors, fall back to `export {}` (empty module proves compilation without resolving anything). Implemented in Plan 01-03 Task 2 Step 5 (fallback path).
 
 2. **Should `@nestjs/common`, `@nestjs/core`, etc. be in root vs `packages/backend`?**
    - What we know: npm workspaces hoists; both approaches work at compile time
    - What's unclear: Whether hoisting creates resolution conflicts with `packages/database` which already has `@nestjs/common ^11.1.27`
-   - Recommendation: Put NestJS deps in `packages/backend/package.json` dependencies (explicit); let npm workspaces deduplicate automatically
+   - RESOLVED: Put NestJS deps in `packages/backend/package.json` dependencies (explicit); let npm workspaces deduplicate automatically. Implemented in Plan 01-03 Task 1.
 
 3. **ESLint 9 vs 10 for new projects (advisory note for planner)**
    - What we know: ESLint 10 is the current `latest`; flat config API is identical; D-01 locks to ESLint 9
    - What's unclear: Nothing — this is a locked decision
-   - Recommendation: Install `eslint@^9` (pins to 9.x maintenance branch). Note in plan that upgrading to ESLint 10 later is a trivial version bump with no config changes.
+   - RESOLVED: Install `eslint@^9` (pins to 9.x maintenance branch); upgrading to ESLint 10 later is a trivial version bump with no config changes. Implemented in Plan 01-02 Task 2.
 
 ---
 
