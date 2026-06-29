@@ -34,7 +34,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `nest build` (SWC builder via `nest-cli.json`) compiles the backend package successfully.
   4. `git status` shows no `.env` tracked, `**/.env` is gitignored, and the previously-committed `DATABASE_URL` credential has been rotated.
   5. Node is pinned via `.nvmrc` to a Node 22+ LTS and TypeScript is pinned to 5.9.x (not 6.0).
-**Plans**: TBD (~3 estimated)
+**Plans**: 3 plans
+Plans:
+- [ ] 01-01-PLAN.md — Repo security prerequisites: fix .gitignore, establish @repo/database identity, rotate live Supabase credential
+- [ ] 01-02-PLAN.md — Workspace root + shared tooling: npm workspaces, Turborepo, TypeScript/ESLint/Prettier configs, .nvmrc
+- [ ] 01-03-PLAN.md — Backend package + Vitest test + CI: minimal @repo/backend, sample test, GitHub Actions workflow
 
 ### Phase 2: Platform Kernel — Bootstrap, Config & Error Contract
 **Goal**: The NestJS application boots under `/api/v1` with fail-fast typed configuration, a single error contract, and Prisma reached only through `@repo/database`.
@@ -139,7 +143,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Monorepo & Tooling Foundation | 0/3 | Not started | - |
+| 1. Monorepo & Tooling Foundation | 0/3 | Planned | - |
 | 2. Platform Kernel — Bootstrap, Config & Error Contract | 0/3 | Not started | - |
 | 3. Platform Kernel — Observability, Validation, Security & Health | 0/5 | Not started | - |
 | 4. Authentication (Entra ID) Infrastructure | 0/3 | Not started | - |
