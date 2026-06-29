@@ -121,17 +121,69 @@ Explicitly excluded this milestone. Documented to prevent scope creep.
 
 ## Traceability
 
-Which phases cover which requirements. Populated during roadmap creation.
+Which phases cover which requirements. Populated during roadmap creation (2026-06-29).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (to be filled by roadmapper) | — | Pending |
+| TOOL-01 | Phase 1 | Pending |
+| TOOL-02 | Phase 1 | Pending |
+| TOOL-03 | Phase 1 | Pending |
+| TOOL-04 | Phase 1 | Pending |
+| TOOL-05 | Phase 1 | Pending |
+| TOOL-06 | Phase 1 | Pending |
+| TOOL-07 | Phase 1 | Pending |
+| INFRA-01 | Phase 2 | Pending |
+| INFRA-02 | Phase 2 | Pending |
+| INFRA-03 | Phase 2 | Pending |
+| INFRA-05 | Phase 2 | Pending |
+| INFRA-06 | Phase 2 | Pending |
+| INFRA-14 | Phase 2 | Pending |
+| INFRA-04 | Phase 3 | Pending |
+| INFRA-07 | Phase 3 | Pending |
+| INFRA-08 | Phase 3 | Pending |
+| INFRA-09 | Phase 3 | Pending |
+| INFRA-10 | Phase 3 | Pending |
+| INFRA-11 | Phase 3 | Pending |
+| INFRA-12 | Phase 3 | Pending |
+| INFRA-13 | Phase 3 | Pending |
+| SEAM-06 | Phase 3 | Pending |
+| AUTH-01 | Phase 4 | Pending |
+| AUTH-02 | Phase 4 | Pending |
+| AUTH-03 | Phase 4 | Pending |
+| AUTH-04 | Phase 4 | Pending |
+| AUTH-05 | Phase 4 | Pending |
+| RBAC-01 | Phase 5 | Pending |
+| RBAC-02 | Phase 5 | Pending |
+| RBAC-03 | Phase 5 | Pending |
+| RBAC-04 | Phase 5 | Pending |
+| TENANT-01 | Phase 6 | Pending |
+| TENANT-02 | Phase 6 | Pending |
+| TENANT-03 | Phase 6 | Pending |
+| TENANT-04 | Phase 6 | Pending |
+| TENANT-05 | Phase 6 | Pending |
+| TENANT-06 | Phase 6 | Pending |
+| TENANT-07 | Phase 6 | Pending |
+| SEAM-05 | Phase 6 | Pending |
+| PROJ-01 | Phase 7 | Pending |
+| PROJ-02 | Phase 7 | Pending |
+| PROJ-03 | Phase 7 | Pending |
+| PROJ-04 | Phase 7 | Pending |
+| SEAM-01 | Phase 8 | Pending |
+| SEAM-02 | Phase 8 | Pending |
+| SEAM-03 | Phase 8 | Pending |
+| SEAM-04 | Phase 8 | Pending |
+| SCAF-01 | Phase 9 | Pending |
+| SCAF-02 | Phase 9 | Pending |
+| SCAF-03 | Phase 9 | Pending |
+| SCAF-04 | Phase 9 | Pending |
+| SCAF-05 | Phase 9 | Pending |
+| SCAF-06 | Phase 9 | Pending |
 
 **Coverage:**
-- v1 requirements: 45 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 45 ⚠️ (resolved by roadmapper)
+- v1 requirements: 53 total (enumerated IDs; the prior "45" header count was stale)
+- Mapped to phases: 53 ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-29*
-*Last updated: 2026-06-29 after initial definition*
+*Last updated: 2026-06-29 after roadmap creation (traceability populated, count corrected 45→53)*
