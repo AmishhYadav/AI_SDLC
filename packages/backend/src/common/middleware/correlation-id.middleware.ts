@@ -15,8 +15,8 @@ function extractSafeTraceId(raw: string | undefined): string | undefined {
 function extractTraceparentId(header: string | undefined): string | undefined {
   if (!header) return undefined;
   const parts = header.split('-');
-  if (parts.length < 2) return undefined;
   const traceHex = parts[1];
+  if (!traceHex) return undefined;
   // Convert 32-char hex trace-id to UUID format (8-4-4-4-12)
   if (!/^[0-9a-f]{32}$/i.test(traceHex)) return undefined;
   return `${traceHex.slice(0, 8)}-${traceHex.slice(8, 12)}-${traceHex.slice(12, 16)}-${traceHex.slice(16, 20)}-${traceHex.slice(20)}`;
