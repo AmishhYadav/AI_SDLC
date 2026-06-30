@@ -35,6 +35,8 @@ This is the first implementation milestone. Subsequent milestones (via `/gsd:new
 - ✓ Initial migration covering all domain tables — existing
 - ✓ Seed bootstrap: system organization, 16 permissions, 4 RBAC roles — existing
 - ✓ Shared `@repo/database` package exposing `PrismaModule` / `PrismaService` (NestJS, global) — existing
+- ✓ NestJS monorepo tooling: Turborepo, ESLint 9 flat config, Prettier, Vitest 4 + SWC, GitHub Actions CI — Phase 01 (2026-06-30)
+- ✓ Platform kernel: NestJS bootstrap (global prefix, URI versioning), typed Zod config, structured error contract (exception filters + correlation-id middleware), full turbo pipeline — Phase 02 (2026-07-01)
 
 ### Active
 
