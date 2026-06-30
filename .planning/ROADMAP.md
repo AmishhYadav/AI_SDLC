@@ -46,7 +46,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-02-PLAN.md — Workspace root + shared tooling: npm workspaces, Turborepo, TypeScript/ESLint/Prettier configs, .nvmrc
+- [x] 01-02-PLAN.md — Workspace root + shared tooling: npm workspaces, Turborepo, TypeScript/ESLint/Prettier configs, .nvmrc
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -179,7 +179,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Monorepo & Tooling Foundation | 1/3 | In Progress|  |
+| 1. Monorepo & Tooling Foundation | 2/3 | In Progress|  |
 | 2. Platform Kernel — Bootstrap, Config & Error Contract | 0/3 | Not started | - |
 | 3. Platform Kernel — Observability, Validation, Security & Health | 0/5 | Not started | - |
 | 4. Authentication (Entra ID) Infrastructure | 0/3 | Not started | - |
