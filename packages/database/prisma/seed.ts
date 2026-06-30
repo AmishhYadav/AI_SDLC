@@ -1,4 +1,4 @@
-const { PrismaClient } = require('../generated/client');
+import { PrismaClient } from '../generated/client';
 
 const prisma = new PrismaClient();
 
@@ -271,7 +271,12 @@ const CONFIGURATIONS = [
   ],
 ];
 
-async function upsertConfiguration(organizationId, key, value, description) {
+async function upsertConfiguration(
+  organizationId: string,
+  key: string,
+  value: unknown,
+  description: string,
+) {
   const existing = await prisma.configuration.findFirst({
     where: { organizationId, key },
   });
