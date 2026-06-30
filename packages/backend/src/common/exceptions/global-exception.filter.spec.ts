@@ -2,16 +2,18 @@ import { describe, it, expect, vi } from 'vitest';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { GlobalExceptionFilter } from './global-exception.filter';
 
-function makeHost(traceId?: string) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeHost(traceId?: string): any {
   const json = vi.fn();
   const status = vi.fn().mockReturnValue({ json });
   const getResponse = vi.fn().mockReturnValue({ status });
   const getRequest = vi.fn().mockReturnValue({ traceId });
-  return { switchToHttp: () => ({ getResponse, getRequest }) } as any;
+  return { switchToHttp: () => ({ getResponse, getRequest }) };
 }
 
-function makeConfig(isProduction = false) {
-  return { isProduction } as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeConfig(isProduction = false): any {
+  return { isProduction };
 }
 
 describe('GlobalExceptionFilter', () => {
@@ -20,7 +22,6 @@ describe('GlobalExceptionFilter', () => {
     const host = makeHost('test-uuid');
     filter.catch(new HttpException('Not found', HttpStatus.NOT_FOUND), host);
     const response = host.switchToHttp().getResponse();
-    const jsonArg = response.status.mock.calls[0][0];
     const body = response.status.mock.results[0].value.json.mock.calls[0][0];
     expect(body.success).toBe(false);
     expect(body.message).toBe('Not found');
