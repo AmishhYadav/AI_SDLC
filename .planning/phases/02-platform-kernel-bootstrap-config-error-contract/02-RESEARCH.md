@@ -676,22 +676,22 @@ export type PlatformErrorCode = (typeof PLATFORM_ERROR_CODES)[keyof typeof PLATF
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `@nestjs/platform-express` be a peerDependency or dependency in `packages/backend/package.json`?**
    - What we know: It is the HTTP adapter; `@nestjs/common` and `@nestjs/core` are already in `dependencies`.
    - What's unclear: NestJS CLI conventions differ on whether the adapter is a `dependency` or `devDependency`/`peerDependency`.
-   - Recommendation: Add as a regular `dependency` — it is required at runtime for the server to boot.
+   - Recommendation: RESOLVED: Add as a regular `dependency` — it is required at runtime for the server to boot.
 
 2. **Does `CorrelationIdMiddleware` need to run before the NestJS exception filter can read `request.traceId`?**
    - What we know: NestJS middleware runs before route guards, interceptors, and filters.
    - What's unclear: The exact ordering guarantee in NestJS 11 when an error is thrown very early (before middleware completes).
-   - Recommendation: Add an integration test verifying that a 404 response (no matching route) still includes a valid UUID `traceId` in the error envelope.
+   - Recommendation: RESOLVED: CorrelationIdMiddleware-before-filters verified by the 404 traceId integration test — a GET /api/v1/nonexistent response with UUID traceId (not 'unknown') confirms middleware ran before the exception filter.
 
 3. **`z.coerce.number()` for PORT — does it handle string `"3000"` from process.env correctly?**
    - What we know: `z.coerce.number()` calls `Number()` on the input. `Number("3000")` → `3000`. [CITED: zod.dev/v4]
    - What's unclear: Edge case behavior for `PORT=""` (empty string) — `Number("")` → `0`, which passes a min(1) check as false.
-   - Recommendation: Use `z.coerce.number().int().min(1).max(65535).default(3000)` — the `min(1)` guard catches empty string coercion to 0.
+   - Recommendation: RESOLVED: z.coerce.number() handles "3000" correctly — `z.coerce.number().int().min(1).max(65535).default(3000)` is used; the `min(1)` guard catches empty string coercion to 0.
 
 ---
 
