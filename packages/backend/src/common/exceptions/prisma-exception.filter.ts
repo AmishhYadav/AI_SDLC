@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Prisma } from '@repo/database';
-import { AppConfigService } from '../../config/app-config.service';
 import { PLATFORM_ERROR_CODES } from './error-codes';
 
 const PRISMA_HTTP_MAP: Record<string, { status: number; errorCode: string; message: string }> = {
@@ -26,8 +25,6 @@ const PRISMA_HTTP_MAP: Record<string, { status: number; errorCode: string; messa
 @Catch(Prisma.PrismaClientKnownRequestError)
 @Injectable()
 export class PrismaExceptionFilter implements ExceptionFilter {
-  constructor(private readonly config: AppConfigService) {}
-
   catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -42,7 +39,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       success: false,
       errorCode,
       message,
-      traceId: request.traceId ?? 'unknown',
+      traceId: request.traceId ?? crypto.randomUUID(),
     });
   }
 }

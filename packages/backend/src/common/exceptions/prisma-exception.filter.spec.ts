@@ -14,14 +14,9 @@ function makeHost(traceId = 'uuid'): any {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function makeConfig(): any {
-  return { isProduction: false };
-}
-
 describe('PrismaExceptionFilter', () => {
   it('maps P2002 to 409 with PLATFORM.RESOURCE_CONFLICT', () => {
-    const filter = new PrismaExceptionFilter(makeConfig());
+    const filter = new PrismaExceptionFilter();
     const host = makeHost('uuid');
     const err = new Prisma.PrismaClientKnownRequestError('Unique constraint', {
       code: 'P2002',
@@ -37,7 +32,7 @@ describe('PrismaExceptionFilter', () => {
   });
 
   it('maps P2025 to 404 with PLATFORM.NOT_FOUND', () => {
-    const filter = new PrismaExceptionFilter(makeConfig());
+    const filter = new PrismaExceptionFilter();
     const host = makeHost('uuid');
     const err = new Prisma.PrismaClientKnownRequestError('Record not found', {
       code: 'P2025',
@@ -53,7 +48,7 @@ describe('PrismaExceptionFilter', () => {
   });
 
   it('maps unknown Prisma error code to 500 with PLATFORM.INTERNAL_ERROR', () => {
-    const filter = new PrismaExceptionFilter(makeConfig());
+    const filter = new PrismaExceptionFilter();
     const host = makeHost('uuid');
     const err = new Prisma.PrismaClientKnownRequestError('Unknown error', {
       code: 'P9999',
@@ -68,7 +63,7 @@ describe('PrismaExceptionFilter', () => {
   });
 
   it('does not include exception.meta in response body', () => {
-    const filter = new PrismaExceptionFilter(makeConfig());
+    const filter = new PrismaExceptionFilter();
     const host = makeHost('uuid');
     const err = new Prisma.PrismaClientKnownRequestError('Unique constraint', {
       code: 'P2002',
