@@ -4,6 +4,8 @@
   "private": true,
   "main": "src/index.ts",
   "scripts": {
+    "generate": "prisma generate",
+    "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit",
     "lint": "eslint 'src/**/*.ts'"
   },
