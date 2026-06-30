@@ -9,6 +9,12 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
 @Module({
   imports: [AppConfigModule, PrismaModule],
   providers: [
+    // ORDER MATTERS: NestJS executes APP_FILTERs in reverse registration order,
+    // so the last-registered filter has highest priority. GlobalExceptionFilter
+    // must come FIRST so that the more-specific PrismaExceptionFilter (registered
+    // last = highest priority) wins for Prisma errors. Swapping these lines would
+    // cause GlobalExceptionFilter to intercept all Prisma errors before
+    // PrismaExceptionFilter runs, silently breaking RESOURCE_CONFLICT / NOT_FOUND codes.
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
     { provide: APP_FILTER, useClass: PrismaExceptionFilter },
   ],
