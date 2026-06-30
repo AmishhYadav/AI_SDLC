@@ -1,0 +1,14 @@
+{
+  "name": "@repo/database",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "@nestjs/common": "^11.1.27",
+    "@prisma/client": "^6.0.0",
+    "prisma": "^6.0.0"
+  },
+  "prisma": {
+    "schema": "prisma/schema",
+    "seed": "node --experimental-strip-types prisma/seed.ts"
+  }
+}
