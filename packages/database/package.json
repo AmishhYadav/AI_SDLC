@@ -4,6 +4,7 @@
   "private": true,
   "main": "src/index.ts",
   "scripts": {
+    "build": "tsc --project tsconfig.json --outDir dist",
     "generate": "prisma generate",
     "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit",
