@@ -14,7 +14,7 @@ This milestone builds the permanent, production-ready NestJS 11 backend skeleton
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Monorepo & Tooling Foundation** - Workspaces, strict TS/ESLint/Prettier/Vitest/Nest tooling, and the urgent `.env` + credential remediation (completed 2026-06-30)
-- [ ] **Phase 2: Platform Kernel — Bootstrap, Config & Error Contract** - `/api/v1` bootstrap, fail-fast typed config, the global error envelope, and Prisma integration
+- [x] **Phase 2: Platform Kernel — Bootstrap, Config & Error Contract** - `/api/v1` bootstrap, fail-fast typed config, the global error envelope, and Prisma integration (completed 2026-06-30)
 - [ ] **Phase 3: Platform Kernel — Observability, Validation, Security & Health** - Structured logging, validation pipe, interceptors, health, Swagger, security baseline, shared conventions
 - [ ] **Phase 4: Authentication (Entra ID) Infrastructure** - Swappable JWKS-based token validation, `@Public()`, `CurrentUser`, dev stub validator
 - [ ] **Phase 5: RBAC Authorization Infrastructure** - `@RequirePermissions()` + `PermissionsGuard` over the seeded permissions, independent of authN
@@ -81,7 +81,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 02-04-PLAN.md — Bootstrap: main.ts + app.module.ts + integration test with traceId UUID assertion (INFRA-01)
+- [x] 02-04-PLAN.md — Bootstrap: main.ts + app.module.ts + integration test with traceId UUID assertion (INFRA-01)
 
 ### Phase 3: Platform Kernel — Observability, Validation, Security & Health
 
@@ -196,7 +196,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Monorepo & Tooling Foundation | 3/3 | Complete   | 2026-06-30 |
-| 2. Platform Kernel — Bootstrap, Config & Error Contract | 3/4 | In Progress|  |
+| 2. Platform Kernel — Bootstrap, Config & Error Contract | 4/4 | Complete   | 2026-06-30 |
 | 3. Platform Kernel — Observability, Validation, Security & Health | 0/5 | Not started | - |
 | 4. Authentication (Entra ID) Infrastructure | 0/3 | Not started | - |
 | 5. RBAC Authorization Infrastructure | 0/2 | Not started | - |
