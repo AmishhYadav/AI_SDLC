@@ -69,7 +69,7 @@ Plans:
 Plans:
 **Wave 1** *(no dependencies)*
 
-- [ ] 02-01-PLAN.md — Package legitimacy gate + install + nest-cli.json entryFile update
+- [x] 02-01-PLAN.md — Package legitimacy gate + install + nest-cli.json entryFile update
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -196,7 +196,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Monorepo & Tooling Foundation | 3/3 | Complete   | 2026-06-30 |
-| 2. Platform Kernel — Bootstrap, Config & Error Contract | 0/4 | Not started | - |
+| 2. Platform Kernel — Bootstrap, Config & Error Contract | 1/4 | In Progress|  |
 | 3. Platform Kernel — Observability, Validation, Security & Health | 0/5 | Not started | - |
 | 4. Authentication (Entra ID) Infrastructure | 0/3 | Not started | - |
 | 5. RBAC Authorization Infrastructure | 0/2 | Not started | - |
