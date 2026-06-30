@@ -65,7 +65,23 @@ Plans:
   4. Any thrown error returns a consistent envelope `{ success, errorCode, message, traceId }`, with no stack traces leaked in production.
   5. Prisma errors map to correct HTTP status (P2002→409, P2025→404) without leaking schema details, and Prisma is reached solely through `@repo/database` with zero schema changes.
 
-**Plans**: TBD (~3 estimated)
+**Plans**: 4 plans
+Plans:
+**Wave 1** *(no dependencies)*
+
+- [ ] 02-01-PLAN.md — Package legitimacy gate + install + nest-cli.json entryFile update
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-02-PLAN.md — ESLint process.env ban (INFRA-03) + typed fail-fast config module (INFRA-02)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-03-PLAN.md — Error contract: PLATFORM_ERROR_CODES, correlation middleware, GlobalExceptionFilter, PrismaExceptionFilter (INFRA-05, INFRA-06, INFRA-14)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-04-PLAN.md — Bootstrap: main.ts + app.module.ts + integration test with traceId UUID assertion (INFRA-01)
 
 ### Phase 3: Platform Kernel — Observability, Validation, Security & Health
 
@@ -180,7 +196,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Monorepo & Tooling Foundation | 3/3 | Complete   | 2026-06-30 |
-| 2. Platform Kernel — Bootstrap, Config & Error Contract | 0/3 | Not started | - |
+| 2. Platform Kernel — Bootstrap, Config & Error Contract | 0/4 | Not started | - |
 | 3. Platform Kernel — Observability, Validation, Security & Health | 0/5 | Not started | - |
 | 4. Authentication (Entra ID) Infrastructure | 0/3 | Not started | - |
 | 5. RBAC Authorization Infrastructure | 0/2 | Not started | - |
