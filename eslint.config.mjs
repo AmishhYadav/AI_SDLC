@@ -28,6 +28,13 @@ export default tseslint.config(
       'no-restricted-properties': 'off',
     },
   },
+  {
+    // Test setup legitimately needs to seed process.env before TestingModule.compile()
+    files: ['**/*.spec.ts', '**/*.test.ts'],
+    rules: {
+      'no-restricted-properties': 'off',
+    },
+  },
   prettierConfig, // MUST be last among rule objects — disables rules that conflict with Prettier
   {
     ignores: [
