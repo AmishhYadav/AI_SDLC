@@ -42,7 +42,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Repo security prerequisites: fix .gitignore, establish @repo/database identity, rotate live Supabase credential
+- [x] 01-01-PLAN.md — Repo security prerequisites: fix .gitignore, establish @repo/database identity, rotate live Supabase credential
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -179,7 +179,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Monorepo & Tooling Foundation | 0/3 | Planned | - |
+| 1. Monorepo & Tooling Foundation | 1/3 | In Progress|  |
 | 2. Platform Kernel — Bootstrap, Config & Error Contract | 0/3 | Not started | - |
 | 3. Platform Kernel — Observability, Validation, Security & Health | 0/5 | Not started | - |
 | 4. Authentication (Entra ID) Infrastructure | 0/3 | Not started | - |
