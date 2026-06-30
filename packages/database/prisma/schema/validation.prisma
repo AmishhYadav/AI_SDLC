@@ -1,0 +1,246 @@
+enum ValidationStatus {
+  PASSED
+  FAILED
+  WARNING
+}
+
+enum ValidationFindingSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ValidationFindingStatus {
+  OPEN
+  RESOLVED
+  ACCEPTED_RISK
+  FALSE_POSITIVE
+}
+
+model ValidationReport {
+  id String @id @default(cuid())
+
+  organizationId String
+  generatedCodeId String
+
+  overallStatus ValidationStatus @default(PASSED)
+
+  overallScore Float?
+
+  summary String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationValidationReports", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  generatedCode GeneratedCode @relation("GeneratedCodeValidationReports", fields: [generatedCodeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  securityReports SecurityReport[] @relation("ValidationSecurityReports")
+  performanceReports PerformanceReport[] @relation("ValidationPerformanceReports")
+  costReports CostReport[] @relation("ValidationCostReports")
+  complianceReports ComplianceReport[] @relation("ValidationComplianceReports")
+  findings ValidationFinding[] @relation("ValidationReportFindings")
+
+  @@index([organizationId])
+  @@index([generatedCodeId])
+  @@index([overallStatus])
+  @@index([createdAt])
+
+  @@map("validation_reports")
+}
+
+model ValidationFinding {
+  id String @id @default(cuid())
+
+  organizationId     String
+  validationReportId String
+
+  category String
+  ruleId   String?
+  severity ValidationFindingSeverity
+  status   ValidationFindingStatus @default(OPEN)
+
+  title       String
+  description String?
+  filePath    String?
+  lineNumber  Int?
+  remediation String?
+  metadata    Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationValidationFindings", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  validationReport ValidationReport @relation("ValidationReportFindings", fields: [validationReportId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([validationReportId])
+  @@index([category])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("validation_findings")
+}
+
+model SecurityReport {
+  id String @id @default(cuid())
+
+  organizationId String
+  validationReportId String
+
+  status ValidationStatus @default(PASSED)
+
+  score Float?
+
+  summary String?
+
+  findings Json?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationSecurityReports", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  validationReport ValidationReport @relation("ValidationSecurityReports", fields: [validationReportId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([validationReportId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("security_reports")
+}
+
+model PerformanceReport {
+  id String @id @default(cuid())
+
+  organizationId String
+  validationReportId String
+
+  status ValidationStatus @default(PASSED)
+
+  score Float?
+
+  summary String?
+
+  metrics Json?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationPerformanceReports", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  validationReport ValidationReport @relation("ValidationPerformanceReports", fields: [validationReportId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([validationReportId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("performance_reports")
+}
+
+model CostReport {
+  id String @id @default(cuid())
+
+  organizationId String
+  validationReportId String
+
+  status ValidationStatus @default(PASSED)
+
+  estimatedCost Decimal? @db.Decimal(10, 4)
+  estimatedTokens Int?
+
+  summary String?
+
+  recommendations Json?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationCostReports", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  validationReport ValidationReport @relation("ValidationCostReports", fields: [validationReportId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([validationReportId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("cost_reports")
+}
+
+model ComplianceReport {
+  id String @id @default(cuid())
+
+  organizationId    String
+  validationReportId String
+
+  status ValidationStatus @default(PASSED)
+
+  complianceFramework String?
+
+  score Float?
+
+  summary String?
+
+  violations Json?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationComplianceReports", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  validationReport ValidationReport @relation("ValidationComplianceReports", fields: [validationReportId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([validationReportId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("compliance_reports")
+}

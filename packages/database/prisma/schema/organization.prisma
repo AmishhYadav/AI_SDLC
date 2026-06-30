@@ -1,0 +1,361 @@
+enum OrganizationStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+model Organization {
+  id String @id @default(cuid())
+
+  name        String
+  slug        String @unique
+  description String?
+  logoUrl     String?
+
+  status   OrganizationStatus @default(ACTIVE)
+  isActive Boolean            @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  projects      Project[]            @relation("OrganizationProjects")
+  teams         Team[]               @relation("OrganizationTeams")
+  repositories  Repository[]         @relation("OrganizationRepositories")
+  members       OrganizationMember[] @relation("OrganizationMembers")
+  projectMembers ProjectMember[]     @relation("OrganizationProjectMembers")
+  roles         Role[]               @relation("OrganizationRoles")
+  permissions   Permission[]         @relation("OrganizationPermissions")
+  integrations  Integration[]        @relation("OrganizationIntegrations")
+
+  knowledgeSources KnowledgeSource[]   @relation("OrganizationKnowledgeSources")
+  contextPackages  ContextPackage[]    @relation("OrganizationContextPackages")
+  embeddingMetadata EmbeddingMetadata[] @relation("OrganizationEmbeddingMetadata")
+  adrIndexes       AdrIndex[]          @relation("OrganizationAdrIndexes")
+
+  brds                  Brd[]                  @relation("OrganizationBrds")
+  tsds                  Tsd[]                  @relation("OrganizationTsds")
+  llds                  Lld[]                  @relation("OrganizationLlds")
+  adrs                  Adr[]                  @relation("OrganizationAdrs")
+  diagrams              Diagram[]              @relation("OrganizationDiagrams")
+  documentationVersions DocumentationVersion[] @relation("OrganizationDocumentationVersions")
+
+  workItems          WorkItem[]          @relation("OrganizationWorkItems")
+  planningSessions   PlanningSession[]   @relation("OrganizationPlanningSessions")
+  impactReports      ImpactReport[]      @relation("OrganizationImpactReports")
+  implementationPlans ImplementationPlan[] @relation("OrganizationImplementationPlans")
+
+  generatedCode    GeneratedCode[]    @relation("OrganizationGeneratedCode")
+  codeGenerations  CodeGeneration[]   @relation("OrganizationCodeGenerations")
+  developerReviews DeveloperReview[]  @relation("OrganizationDeveloperReviews")
+  consensusResults ConsensusResult[]  @relation("OrganizationConsensusResults")
+  codeChats        CodeChat[]         @relation("OrganizationCodeChats")
+  codeRefactors    CodeRefactor[]     @relation("OrganizationCodeRefactors")
+
+  validationReports  ValidationReport[]  @relation("OrganizationValidationReports")
+  validationFindings ValidationFinding[] @relation("OrganizationValidationFindings")
+  securityReports    SecurityReport[]    @relation("OrganizationSecurityReports")
+  performanceReports PerformanceReport[] @relation("OrganizationPerformanceReports")
+  costReports        CostReport[]        @relation("OrganizationCostReports")
+  complianceReports  ComplianceReport[]  @relation("OrganizationComplianceReports")
+
+  testSuites      TestSuite[]      @relation("OrganizationTestSuites")
+  testCases       TestCase[]       @relation("OrganizationTestCases")
+  testRuns        TestRun[]        @relation("OrganizationTestRuns")
+  coverageReports CoverageReport[] @relation("OrganizationCoverageReports")
+  autoFixHistory  AutoFixHistory[] @relation("OrganizationAutoFixHistory")
+
+  branches          Branch[]           @relation("OrganizationBranches")
+  commits           Commit[]           @relation("OrganizationCommits")
+  pullRequests      PullRequest[]      @relation("OrganizationPullRequests")
+  pullRequestReviews PullRequestReview[] @relation("OrganizationPullRequestReviews")
+  pullRequestMergeResults PullRequestMergeResult[] @relation("OrganizationPullRequestMergeResults")
+  deploymentReports DeploymentReport[] @relation("OrganizationDeploymentReports")
+
+  learningProfiles LearningProfile[] @relation("OrganizationLearningProfiles")
+
+  capabilities Capability[] @relation("OrganizationCapabilities")
+  prompts      Prompt[]     @relation("OrganizationPrompts")
+  models       AiModel[]    @relation("OrganizationModels")
+  graphs       Graph[]      @relation("OrganizationGraphs")
+  workflowRuns WorkflowRun[] @relation("OrganizationWorkflowRuns")
+  workflowCheckpoints WorkflowCheckpoint[] @relation("OrganizationWorkflowCheckpoints")
+  workflowEvents      WorkflowEvent[]      @relation("OrganizationWorkflowEvents")
+  humanApprovals      HumanApproval[]      @relation("OrganizationHumanApprovals")
+  aiExecutions        AiExecution[]        @relation("OrganizationAiExecutions")
+
+  auditLogs      AuditLog[]      @relation("OrganizationAuditLogs")
+  notifications  Notification[]  @relation("OrganizationNotifications")
+  configurations Configuration[] @relation("OrganizationConfigurations")
+  metrics        Metric[]        @relation("OrganizationMetrics")
+  alerts         Alert[]         @relation("OrganizationAlerts")
+
+  @@unique([name])
+  @@index([status])
+  @@index([isActive])
+  @@index([createdAt])
+
+  @@map("organizations")
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+  COMPLETED
+}
+
+enum ProjectMemberStatus {
+  ACTIVE
+  INACTIVE
+  REMOVED
+}
+
+model Project {
+  id String @id @default(cuid())
+
+  organizationId String
+
+  name        String
+  key         String
+  description String?
+
+  status ProjectStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationProjects", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  repositories Repository[] @relation("ProjectRepositories")
+  workItems    WorkItem[]   @relation("ProjectWorkItems")
+  members      ProjectMember[] @relation("ProjectMembers")
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  id String @id @default(cuid())
+
+  organizationId       String
+  projectId            String
+  organizationMemberId String
+
+  status ProjectMemberStatus @default(ACTIVE)
+  roleName String?
+  joinedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationProjectMembers", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  project Project @relation("ProjectMembers", fields: [projectId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  organizationMember OrganizationMember @relation("OrganizationMemberProjects", fields: [organizationMemberId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([projectId, organizationMemberId])
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([organizationMemberId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("project_members")
+}
+
+enum RepositoryStatus {
+  ACTIVE
+  INDEXING
+  FAILED
+  ARCHIVED
+}
+
+enum RepositoryProvider {
+  GITHUB
+  AZURE_DEVOPS
+  GITLAB
+  BITBUCKET
+}
+
+model Repository {
+  id String @id @default(cuid())
+
+  organizationId String
+  projectId      String
+
+  name          String
+  provider      RepositoryProvider
+  remoteUrl     String
+  defaultBranch String @default("main")
+
+  status RepositoryStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationRepositories", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  project Project @relation("ProjectRepositories", fields: [projectId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  profile RepositoryProfile? @relation("RepositoryProfile")
+  knowledgeSources KnowledgeSource[] @relation("RepositoryKnowledgeSources")
+  contextPackages  ContextPackage[]  @relation("RepositoryContextPackages")
+  embeddingMetadata EmbeddingMetadata[] @relation("RepositoryEmbeddingMetadata")
+  adrIndexes       AdrIndex[]        @relation("RepositoryAdrIndexes")
+  brds             Brd[]             @relation("RepositoryBrds")
+  tsds             Tsd[]             @relation("RepositoryTsds")
+  llds             Lld[]             @relation("RepositoryLlds")
+  adrs             Adr[]             @relation("RepositoryAdrs")
+  diagrams         Diagram[]         @relation("RepositoryDiagrams")
+  branches         Branch[]          @relation("RepositoryBranches")
+  commits          Commit[]          @relation("RepositoryCommits")
+  pullRequests     PullRequest[]     @relation("RepositoryPullRequests")
+
+  @@unique([organizationId, projectId, name])
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([status])
+  @@index([provider])
+  @@index([createdAt])
+
+  @@map("repositories")
+}
+
+enum TeamType {
+  ENGINEERING
+  QA
+  DEVOPS
+  PLATFORM
+  PRODUCT
+  ARCHITECTURE
+  SECURITY
+  BUSINESS
+  CUSTOM
+}
+
+model Team {
+  id String @id @default(cuid())
+
+  organizationId String
+
+  name        String
+  description String?
+  type        TeamType @default(ENGINEERING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationTeams", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  members TeamMember[] @relation("TeamMembers")
+
+  @@unique([organizationId, name])
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([createdAt])
+
+  @@map("teams")
+}
+
+enum OrganizationMemberStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+
+model OrganizationMember {
+  id String @id @default(cuid())
+
+  organizationId String
+  userId         String
+
+  status   OrganizationMemberStatus @default(INVITED)
+  joinedAt DateTime?
+  invitedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationMembers", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  user User @relation("UserOrganizations", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  teamMemberships TeamMember[] @relation("OrganizationMemberTeams")
+  userRoles UserRole[] @relation("OrganizationMemberRoles")
+  projectMemberships ProjectMember[] @relation("OrganizationMemberProjects")
+
+  @@unique([organizationId, userId])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("organization_members")
+}
+
+model TeamMember {
+  id String @id @default(cuid())
+
+  teamId               String
+  organizationMemberId String
+
+  joinedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  team Team @relation("TeamMembers", fields: [teamId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  organizationMember OrganizationMember @relation("OrganizationMemberTeams", fields: [organizationMemberId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([teamId, organizationMemberId])
+
+  @@index([teamId])
+  @@index([organizationMemberId])
+  @@index([createdAt])
+
+  @@map("team_members")
+}

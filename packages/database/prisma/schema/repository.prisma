@@ -1,0 +1,267 @@
+enum RepositoryProfileStatus {
+  PENDING
+  SCANNING
+  INDEXING
+  COMPLETED
+  FAILED
+}
+
+enum RepositoryIndexStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model RepositoryProfile {
+  id String @id @default(cuid())
+
+  repositoryId String
+  lastCommitSha String?
+
+  name String?
+  description String?
+  status RepositoryProfileStatus @default(PENDING)
+  scannedAt DateTime?
+  indexedAt DateTime?
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  repository Repository @relation("RepositoryProfile", fields: [repositoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  dependencyGraphs     DependencyGraph[]     @relation("RepositoryDependencyGraphs")
+  architectureProfiles ArchitectureProfile[] @relation("RepositoryArchitectureProfiles")
+  apiCatalogs          ApiCatalog[]          @relation("RepositoryApiCatalogs")
+  databaseCatalogs     DatabaseCatalog[]     @relation("RepositoryDatabaseCatalogs")
+  repositoryServices   RepositoryService[]   @relation("RepositoryServices")
+  repositoryIndexes    RepositoryIndex[]     @relation("RepositoryIndexes")
+
+  @@unique([repositoryId])
+
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("repository_profiles")
+}
+
+model DependencyGraph {
+  id String @id @default(cuid())
+
+  repositoryProfileId String
+
+  source          String
+  target          String
+  dependencyType  String?
+  version         String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  repositoryProfile RepositoryProfile @relation("RepositoryDependencyGraphs", fields: [repositoryProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([repositoryProfileId])
+  @@index([source])
+  @@index([target])
+  @@index([createdAt])
+  @@index([dependencyType])
+
+  @@map("dependency_graphs")
+}
+model ArchitectureProfile {
+  id String @id @default(cuid())
+
+  repositoryProfileId String
+
+  architectureStyle String?
+  layeringStrategy  String?
+  serviceCount      Int?
+  moduleCount       Int?
+  packageManager    String?
+  buildTool         String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  repositoryProfile RepositoryProfile @relation("RepositoryArchitectureProfiles", fields: [repositoryProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([repositoryProfileId])
+  @@index([architectureStyle])
+  @@index([createdAt])
+
+  @@map("architecture_profiles")
+}
+
+model ApiCatalog {
+  id String @id @default(cuid())
+
+  repositoryProfileId String
+
+  name        String
+  method      String
+  path        String
+
+  controller  String?
+  service     String?
+  filePath    String
+  lineNumber  Int?
+
+  requestSchema  Json?
+  responseSchema Json?
+
+  authenticated Boolean @default(false)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  repositoryProfile RepositoryProfile @relation("RepositoryApiCatalogs", fields: [repositoryProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([repositoryProfileId, method, path])
+
+  @@index([repositoryProfileId])
+  @@index([method])
+  @@index([path])
+  @@index([createdAt])
+  @@index([filePath])
+
+  @@map("api_catalog") 
+}
+
+model DatabaseCatalog {
+  id String @id @default(cuid())
+
+  repositoryProfileId String
+
+  name            String
+  engine          String?
+  schema          String?
+  tableCount      Int?
+  migrationTool   String?
+  viewCount       Int?
+  functionCount   Int?
+  triggerCount    Int?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  repositoryProfile RepositoryProfile @relation("RepositoryDatabaseCatalogs", fields: [repositoryProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([repositoryProfileId, name])
+
+  @@index([repositoryProfileId])
+  @@index([engine])
+  @@index([createdAt])
+
+  @@map("database_catalogs")
+}
+
+model RepositoryService {
+  id String @id @default(cuid())
+
+  repositoryProfileId String
+
+  name        String
+  type        String
+  description String?
+
+  language  String?
+  framework String?
+  rootPath   String
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  repositoryProfile RepositoryProfile @relation("RepositoryServices", fields: [repositoryProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([repositoryProfileId, name])
+
+  @@index([repositoryProfileId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([rootPath])
+
+  @@map("repository_services")
+}
+
+model RepositoryIndex {
+  id String @id @default(cuid())
+
+  repositoryProfileId String
+
+  indexVersion String
+
+  commitSha String?
+
+  branch String?
+
+  status RepositoryIndexStatus @default(PENDING)
+
+  startedAt DateTime?
+  completedAt DateTime?
+
+  filesIndexed Int @default(0)
+  chunksIndexed Int @default(0)
+  embeddingsGenerated Int @default(0)
+  durationMs Int?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  repositoryProfile RepositoryProfile @relation("RepositoryIndexes", fields: [repositoryProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([repositoryProfileId])
+  @@index([status])
+  @@index([branch])
+  @@index([createdAt])
+  @@index([commitSha])
+
+  @@map("repository_indexes")
+}

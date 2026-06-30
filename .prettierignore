@@ -1,0 +1,12 @@
+# Planning and documentation
+.planning/
+Enterprise-AI-Delivery-Platform-Documentation/
+
+# Generated files
+**/generated/
+**/dist/
+node_modules/
+
+# Agent/tool config
+AGENTS.md
+CLAUDE.md

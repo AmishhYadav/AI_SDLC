@@ -1,0 +1,182 @@
+enum WorkItemType {
+  BACKEND_EPIC
+  FRONTEND_EPIC
+  FEATURE
+  ISSUE
+}
+
+enum WorkItemStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+  BLOCKED
+}
+
+model WorkItem {
+  id String @id @default(cuid())
+
+  organizationId String
+  projectId      String
+
+  azureWorkItemId Int?
+
+  type   WorkItemType
+  status WorkItemStatus @default(TODO)
+
+  title       String
+  description String?
+
+  priority Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationWorkItems", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  project Project @relation("ProjectWorkItems", fields: [projectId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  brds Brd[] @relation("WorkItemBrds")
+
+  tsds Tsd[] @relation("WorkItemTsds")
+
+  llds Lld[] @relation("WorkItemLlds")
+
+  adrs Adr[] @relation("WorkItemAdrs")
+
+  diagrams Diagram[] @relation("WorkItemDiagrams")
+
+  planningSessions PlanningSession[] @relation("WorkItemPlanningSessions")
+
+  implementationPlans ImplementationPlan[] @relation("WorkItemImplementationPlans")
+
+  generatedCode GeneratedCode[] @relation("WorkItemGeneratedCode")
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([type])
+  @@index([status])
+  @@index([azureWorkItemId])
+  @@index([createdAt])
+
+  @@map("work_items")
+}
+
+model PlanningSession {
+  id String @id @default(cuid())
+
+  organizationId String
+  workItemId      String
+
+  name String
+
+  status WorkflowStatus @default(PENDING)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationPlanningSessions", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  workItem WorkItem @relation("WorkItemPlanningSessions", fields: [workItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  impactReports ImpactReport[] @relation("PlanningSessionImpactReports")
+
+  implementationPlans ImplementationPlan[] @relation("PlanningSessionImplementationPlans")
+
+  @@index([organizationId])
+  @@index([workItemId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("planning_sessions")
+}
+
+model ImpactReport {
+  id String @id @default(cuid())
+
+  organizationId    String
+  planningSessionId String
+
+  summary           String?
+  architectureImpact String?
+  dependencyImpact   String?
+  databaseImpact     String?
+  apiImpact          String?
+  uiImpact           String?
+  riskLevel          String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationImpactReports", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  planningSession PlanningSession @relation("PlanningSessionImpactReports", fields: [planningSessionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([planningSessionId])
+  @@index([createdAt])
+
+  @@map("impact_reports")
+}
+
+model ImplementationPlan {
+  id String @id @default(cuid())
+
+  organizationId    String
+  planningSessionId String
+  workItemId        String
+
+  title       String
+  description String?
+
+  implementationStrategy String?
+  estimatedEffort        String?
+  complexity             String?
+
+  tasks Json?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationImplementationPlans", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  planningSession PlanningSession @relation("PlanningSessionImplementationPlans", fields: [planningSessionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  workItem WorkItem @relation("WorkItemImplementationPlans", fields: [workItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([planningSessionId])
+  @@index([workItemId])
+  @@index([createdAt])
+
+  @@map("implementation_plans")
+}

@@ -1,0 +1,170 @@
+enum IntegrationProvider {
+  AZURE_DEVOPS
+  GITHUB
+  STITCH
+  SONARQUBE
+  CONFLUENCE
+  SLACK
+  MICROSOFT_TEAMS
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  DISCONNECTED
+  ERROR
+  DISABLED
+}
+
+model Integration {
+  id String @id @default(cuid())
+
+  organizationId String
+
+  provider IntegrationProvider
+  externalOrganizationId String?
+  externalProjectId String?
+
+  name        String
+  description String?
+
+  status IntegrationStatus @default(ACTIVE)
+
+  isEnabled Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationIntegrations", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  credentials Credential[] @relation("IntegrationCredentials")
+
+  webhooks Webhook[] @relation("IntegrationWebhooks")
+
+  syncJobs SyncJob[] @relation("IntegrationSyncJobs")
+
+  @@unique([organizationId, provider])
+
+  @@index([organizationId])
+  @@index([provider])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("integrations")
+}
+
+model Credential {
+  id String @id @default(cuid())
+
+  integrationId String
+
+  key           String
+  secret        String
+  isEncrypted   Boolean @default(true)
+  expiresAt     DateTime?
+  lastRotatedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  integration Integration @relation("IntegrationCredentials", fields: [integrationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([integrationId, key])
+
+  @@index([integrationId])
+  @@index([key])
+  @@index([createdAt])
+
+  @@map("credentials")
+}
+
+model Webhook {
+  id String @id @default(cuid())
+
+  integrationId String
+
+  name              String
+  events            Json
+  targetUrl         String
+  lastDeliveryAt    DateTime?
+  failureCount      Int @default(0)
+  secret            String?
+
+  isActive Boolean @default(true)
+
+  lastTriggeredAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  integration Integration @relation("IntegrationWebhooks", fields: [integrationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([integrationId, name])
+
+  @@index([integrationId])
+  @@index([isActive])
+  @@index([createdAt])
+
+  @@map("webhooks")
+}
+
+enum SyncJobStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+model SyncJob {
+  id String @id @default(cuid())
+
+  integrationId String
+
+  name       String
+  jobType    String
+  status     SyncJobStatus @default(PENDING)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+
+  errorMessage String?
+
+  metadata Json?
+  itemsProcessed Int?
+  itemsFailed Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  integration Integration @relation("IntegrationSyncJobs", fields: [integrationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([integrationId])
+  @@index([status])
+  @@index([jobType])
+  @@index([lastRunAt])
+  @@index([createdAt])
+
+  @@map("sync_jobs")
+}

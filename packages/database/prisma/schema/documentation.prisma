@@ -1,0 +1,309 @@
+enum DocumentationStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+model Brd {
+  id String @id @default(cuid())
+
+  organizationId String
+  repositoryId   String?
+  workItemId     String?
+
+  title       String
+  version     String
+  status      DocumentationStatus @default(DRAFT)
+
+  content     String
+
+  approvedAt  DateTime?
+  approvedBy  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationBrds", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  repository Repository? @relation("RepositoryBrds", fields: [repositoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  workItem WorkItem? @relation("WorkItemBrds", fields: [workItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  tsds Tsd[] @relation("BrdTsds")
+
+  versions DocumentationVersion[] @relation("BrdVersions")
+
+  @@unique([organizationId, title, version])
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([workItemId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("brds")
+}
+
+model Tsd {
+  id String @id @default(cuid())
+
+  organizationId String
+  repositoryId   String?
+  brdId          String
+  workItemId     String?
+
+  title   String
+  version String
+
+  status DocumentationStatus @default(DRAFT)
+
+  content String
+
+  approvedAt DateTime?
+  approvedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationTsds", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  repository Repository? @relation("RepositoryTsds", fields: [repositoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  brd Brd @relation("BrdTsds", fields: [brdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  workItem WorkItem? @relation("WorkItemTsds", fields: [workItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  llds Lld[] @relation("TsdLlds")
+
+  versions DocumentationVersion[] @relation("TsdVersions")
+
+  @@unique([organizationId, title, version])
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([brdId])
+  @@index([workItemId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("tsds")
+}
+
+model Lld {
+  id String @id @default(cuid())
+
+  organizationId String
+  repositoryId   String?
+  tsdId          String
+  workItemId     String?
+
+  title   String
+  version String
+
+  status DocumentationStatus @default(DRAFT)
+
+  content String
+
+  approvedAt DateTime?
+  approvedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationLlds", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  repository Repository? @relation("RepositoryLlds", fields: [repositoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  tsd Tsd @relation("TsdLlds", fields: [tsdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  workItem WorkItem? @relation("WorkItemLlds", fields: [workItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  generatedCode GeneratedCode[] @relation("LldGeneratedCode")
+
+  versions DocumentationVersion[] @relation("LldVersions")
+
+  @@unique([organizationId, title, version])
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([tsdId])
+  @@index([workItemId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("llds")
+}
+
+model Adr {
+  id String @id @default(cuid())
+
+  organizationId String
+  repositoryId   String?
+  workItemId     String?
+
+  title   String
+  version String
+
+  status DocumentationStatus @default(DRAFT)
+
+  decision String
+  context  String?
+  rationale String?
+  consequences String?
+
+  approvedAt DateTime?
+  approvedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationAdrs", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  repository Repository? @relation("RepositoryAdrs", fields: [repositoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  workItem WorkItem? @relation("WorkItemAdrs", fields: [workItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  versions DocumentationVersion[] @relation("AdrVersions")
+
+  @@unique([organizationId, title, version])
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([workItemId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("adrs")
+}
+
+enum DiagramType {
+  MERMAID
+  ERD
+  SEQUENCE
+  COMPONENT
+  CLASS
+  FLOWCHART
+  STATE
+  DEPLOYMENT
+}
+
+model Diagram {
+  id String @id @default(cuid())
+
+  organizationId String
+  repositoryId   String?
+  workItemId     String?
+
+  type DiagramType
+
+  title   String
+  version String
+
+  content String
+  sourceFormat String?
+  renderedSvg String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationDiagrams", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  repository Repository? @relation("RepositoryDiagrams", fields: [repositoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  workItem WorkItem? @relation("WorkItemDiagrams", fields: [workItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  versions DocumentationVersion[] @relation("DiagramVersions")
+
+  @@unique([organizationId, title, version, type])
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([workItemId])
+  @@index([type])
+  @@index([createdAt])
+
+  @@map("diagrams")
+}
+
+model DocumentationVersion {
+  id String @id @default(cuid())
+
+  brdId     String?
+  tsdId     String?
+  lldId     String?
+  adrId     String?
+  diagramId String?
+  organizationId String
+
+  version String
+  versionNumber Int
+
+  changeSummary String?
+
+  content String
+  contentHash String
+  changeType String?
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  brd Brd? @relation("BrdVersions", fields: [brdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  tsd Tsd? @relation("TsdVersions", fields: [tsdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  lld Lld? @relation("LldVersions", fields: [lldId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  adr Adr? @relation("AdrVersions", fields: [adrId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  diagram Diagram? @relation("DiagramVersions", fields: [diagramId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  organization Organization @relation("OrganizationDocumentationVersions", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([brdId])
+  @@index([tsdId])
+  @@index([lldId])
+  @@index([adrId])
+  @@index([diagramId])
+  @@index([version])
+  @@index([organizationId])
+  @@unique([brdId, versionNumber])
+  @@unique([tsdId, versionNumber])
+  @@unique([lldId, versionNumber])
+  @@unique([adrId, versionNumber])
+  @@unique([diagramId, versionNumber])
+
+  @@map("documentation_versions")
+}

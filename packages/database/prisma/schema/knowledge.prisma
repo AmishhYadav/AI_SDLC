@@ -1,0 +1,205 @@
+enum KnowledgeSourceType {
+  SOURCE_CODE
+  BRD
+  TSD
+  LLD
+  ADR
+  API_DOCUMENTATION
+  ARCHITECTURE_DOCUMENTATION
+  ENGINEERING_STANDARD
+  SECURITY_POLICY
+  RUNBOOK
+  PULL_REQUEST
+  OTHER
+}
+
+enum EmbeddingSourceType {
+  BRD
+  TSD
+  LLD
+  ADR
+  CODE
+  API
+  DATABASE
+  DOCUMENT
+}
+
+enum VectorStoreProvider {
+  QDRANT
+  PGVECTOR
+  PINECONE
+  WEAVIATE
+}
+
+
+
+model KnowledgeSource {
+  id String @id @default(cuid())
+
+  organizationId String
+  repositoryId   String?
+
+  name        String
+  type        KnowledgeSourceType
+  sourcePath  String?
+  relativePath String?
+  version     String?
+  checksum    String?
+
+  isIndexed Boolean @default(false)
+  lastIndexedAt DateTime?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationKnowledgeSources", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  repository Repository? @relation("RepositoryKnowledgeSources", fields: [repositoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  contextPackages ContextPackage[] @relation("KnowledgeSourceContextPackages")
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([type])
+  @@index([isIndexed])
+  @@index([createdAt])
+  @@index([organizationId, type])
+
+  @@map("knowledge_sources")
+}
+
+model ContextPackage {
+  id String @id @default(cuid())
+
+  organizationId    String
+  repositoryId      String?
+  knowledgeSourceId String?
+
+  name       String
+  capability String
+  version    String?
+
+  contextData Json
+
+  tokenCount Int?
+  chunkCount Int?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationContextPackages", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  repository Repository? @relation("RepositoryContextPackages", fields: [repositoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  knowledgeSource KnowledgeSource? @relation("KnowledgeSourceContextPackages", fields: [knowledgeSourceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([knowledgeSourceId])
+  @@index([capability])
+  @@index([createdAt])
+  @@index([organizationId, capability])
+
+  @@map("context_packages")
+}
+
+model EmbeddingMetadata {
+  id String @id @default(cuid())
+
+  organizationId String
+  repositoryId   String?
+  sourceType EmbeddingSourceType
+  sourceId String?
+
+  chunkIndex Int
+  chunkId String
+
+  vectorId String?
+
+  vectorStore VectorStoreProvider
+
+  checksum String?
+  embeddingModel String?
+
+  tokenCount Int?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationEmbeddingMetadata", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  repository Repository? @relation("RepositoryEmbeddingMetadata", fields: [repositoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([sourceType])
+  @@index([sourceId])
+  @@index([vectorId])
+  @@index([createdAt])
+  @@index([vectorStore])
+
+  @@map("embedding_metadata")
+}
+
+model AdrIndex {
+  id String @id @default(cuid())
+
+  organizationId String
+  repositoryId   String?
+
+  adrId String
+
+  title   String
+  status  String
+  version String
+
+  summary String?
+
+  vectorId String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationAdrIndexes", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  repository Repository? @relation("RepositoryAdrIndexes", fields: [repositoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([organizationId, adrId, version])
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([status])
+  @@index([vectorId])
+  @@index([createdAt])
+  @@index([organizationId, status])
+
+  @@map("adr_indexes")
+}

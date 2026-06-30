@@ -1,0 +1,141 @@
+model LearningProfile {
+  id String @id @default(cuid())
+
+  organizationId String
+
+  name        String
+  description String?
+
+  version Int @default(1)
+
+  isActive Boolean @default(true)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationLearningProfiles", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  codingPreferences CodingPreference[] @relation("LearningProfileCodingPreferences")
+
+  architecturePreferences ArchitecturePreference[] @relation("LearningProfileArchitecturePreferences")
+
+  reviewPatterns ReviewPattern[] @relation("LearningProfileReviewPatterns")
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([createdAt])
+
+  @@map("learning_profiles")
+}
+
+model CodingPreference {
+  id String @id @default(cuid())
+
+  learningProfileId String
+
+  language String?
+
+  framework String?
+
+  namingConvention String?
+
+  formattingStyle String?
+
+  testingFramework String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  learningProfile LearningProfile @relation("LearningProfileCodingPreferences", fields: [learningProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([learningProfileId])
+  @@index([language])
+  @@index([createdAt])
+
+  @@map("coding_preferences")
+}
+
+model ArchitecturePreference {
+  id String @id @default(cuid())
+
+  learningProfileId String
+
+  architectureStyle String?
+
+  designPatterns Json?
+
+  layeringStrategy String?
+
+  apiStyle String?
+
+  databasePreference String?
+
+  messagingPreference String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  learningProfile LearningProfile @relation("LearningProfileArchitecturePreferences", fields: [learningProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([learningProfileId])
+  @@index([architectureStyle])
+  @@index([createdAt])
+
+  @@map("architecture_preferences")
+}
+model ReviewPattern {
+  id String @id @default(cuid())
+
+  learningProfileId String
+
+  patternName String
+
+  category String?
+
+  frequency Int @default(1)
+
+  recommendation String?
+
+  examples Json?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  learningProfile LearningProfile @relation("LearningProfileReviewPatterns", fields: [learningProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([learningProfileId, patternName])
+
+  @@index([learningProfileId])
+  @@index([category])
+  @@index([createdAt])
+
+  @@map("review_patterns")
+}

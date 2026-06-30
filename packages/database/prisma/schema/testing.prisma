@@ -1,0 +1,206 @@
+enum TestStatus {
+  PENDING
+  RUNNING
+  PASSED
+  FAILED
+  SKIPPED
+}
+
+model TestSuite {
+  id String @id @default(cuid())
+
+  organizationId String
+
+  name        String
+  description String?
+
+  type String
+
+  isActive Boolean @default(true)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationTestSuites", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  testCases TestCase[] @relation("TestSuiteTestCases")
+
+  testRuns TestRun[] @relation("TestSuiteTestRuns")
+
+  @@unique([organizationId, name])
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([createdAt])
+
+  @@map("test_suites")
+}
+
+model TestCase {
+  id String @id @default(cuid())
+
+  organizationId String
+  testSuiteId    String
+
+  name        String
+  description String?
+
+  type String
+
+  status TestStatus @default(PENDING)
+
+  expectedResult String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationTestCases", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  testSuite TestSuite @relation("TestSuiteTestCases", fields: [testSuiteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([testSuiteId, name])
+
+  @@index([organizationId])
+  @@index([testSuiteId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("test_cases")
+}
+
+model TestRun {
+  id String @id @default(cuid())
+
+  organizationId String
+  testSuiteId    String
+  generatedCodeId String
+
+  status TestStatus @default(PENDING)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  durationMs Int?
+
+  passedCount Int @default(0)
+  failedCount Int @default(0)
+  skippedCount Int @default(0)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationTestRuns", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  testSuite TestSuite @relation("TestSuiteTestRuns", fields: [testSuiteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  generatedCode GeneratedCode @relation("GeneratedCodeTestRuns", fields: [generatedCodeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  coverageReports CoverageReport[] @relation("TestRunCoverageReports")
+  autoFixHistory AutoFixHistory[] @relation("TestRunAutoFixHistory")
+
+  @@index([organizationId])
+  @@index([testSuiteId])
+  @@index([generatedCodeId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("test_runs")
+}
+
+model CoverageReport {
+  id String @id @default(cuid())
+
+  organizationId String
+  testRunId       String
+
+  overallCoverage Float?
+
+  lineCoverage     Float?
+  branchCoverage   Float?
+  functionCoverage Float?
+  statementCoverage Float?
+
+  uncoveredFiles Json?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationCoverageReports", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  testRun TestRun @relation("TestRunCoverageReports", fields: [testRunId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([testRunId])
+  @@index([createdAt])
+
+  @@map("coverage_reports")
+}
+
+model AutoFixHistory {
+  id String @id @default(cuid())
+
+  organizationId String
+  testRunId       String
+
+  attempt Int @default(1)
+
+  reason String?
+
+  fixSummary String?
+
+  modelProvider ModelProvider
+
+  modelName String
+
+  success Boolean @default(false)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationAutoFixHistory", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  testRun TestRun @relation("TestRunAutoFixHistory", fields: [testRunId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([testRunId])
+  @@index([success])
+  @@index([createdAt])
+
+  @@map("autofix_history")
+}
+

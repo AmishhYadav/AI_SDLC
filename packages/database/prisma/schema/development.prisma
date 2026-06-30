@@ -1,0 +1,270 @@
+model GeneratedCode {
+  id String @id @default(cuid())
+
+  organizationId String
+  workItemId      String
+  lldId           String
+
+  name        String
+  path        String
+  language    String
+
+  content String
+
+  generatedBy String?
+
+  version Int @default(1)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationGeneratedCode", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  workItem WorkItem @relation("WorkItemGeneratedCode", fields: [workItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  lld Lld @relation("LldGeneratedCode", fields: [lldId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  codeGenerations CodeGeneration[] @relation("GeneratedCodeGenerations")
+
+  developerReviews DeveloperReview[] @relation("GeneratedCodeReviews")
+
+  validationReports ValidationReport[] @relation("GeneratedCodeValidationReports")
+
+  testRuns TestRun[] @relation("GeneratedCodeTestRuns")
+
+  pullRequests PullRequest[] @relation("GeneratedCodePullRequests")
+  
+  consensusResults ConsensusResult[] @relation("GeneratedCodeConsensusResults")
+
+  codeChats CodeChat[] @relation("GeneratedCodeChats")
+
+  codeRefactors CodeRefactor[] @relation("GeneratedCodeRefactors")
+
+  aiExecutions AiExecution[] @relation("GeneratedCodeAiExecutions")
+
+  @@index([organizationId])
+  @@index([workItemId])
+  @@index([lldId])
+  @@index([language])
+  @@index([createdAt])
+
+  @@map("generated_code")
+}
+
+model CodeGeneration {
+  id String @id @default(cuid())
+
+  organizationId String
+  generatedCodeId String
+
+  modelProvider ModelProvider
+
+  modelName String
+
+  promptVersion String?
+
+  promptTokens     Int?
+  completionTokens Int?
+  totalTokens      Int?
+
+  cost    Decimal? @db.Decimal(10, 4)
+  latency Int?
+
+  success Boolean @default(true)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationCodeGenerations", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  generatedCode GeneratedCode @relation("GeneratedCodeGenerations", fields: [generatedCodeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([generatedCodeId])
+  @@index([modelProvider])
+  @@index([createdAt])
+
+  @@map("code_generations")
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  CHANGES_REQUESTED
+  REJECTED
+}
+
+model DeveloperReview {
+  id String @id @default(cuid())
+
+  organizationId String
+  generatedCodeId String
+
+  reviewerId String
+
+  status ReviewStatus @default(PENDING)
+
+  comments String?
+
+  reviewedAt DateTime?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationDeveloperReviews", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  generatedCode GeneratedCode @relation("GeneratedCodeReviews", fields: [generatedCodeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  reviewer User @relation("UserDeveloperReviews", fields: [reviewerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([generatedCodeId])
+  @@index([reviewerId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("developer_reviews")
+}
+
+model ConsensusResult {
+  id String @id @default(cuid())
+
+  organizationId String
+  generatedCodeId String
+
+  primaryModel   String
+  secondaryModel String
+
+  selectedModel String?
+
+  rationale String?
+
+  confidence Float?
+
+  differences Json?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationConsensusResults", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  generatedCode GeneratedCode @relation("GeneratedCodeConsensusResults", fields: [generatedCodeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([generatedCodeId])
+  @@index([createdAt])
+
+  @@map("consensus_results")
+}
+
+model CodeChat {
+  id String @id @default(cuid())
+
+  organizationId String
+  generatedCodeId String
+
+  userId String
+
+  prompt   String
+  response String
+
+  modelProvider ModelProvider
+  modelName     String
+
+  promptTokens     Int?
+  completionTokens Int?
+  totalTokens      Int?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationCodeChats", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  generatedCode GeneratedCode @relation("GeneratedCodeChats", fields: [generatedCodeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  user User @relation("UserCodeChats", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([generatedCodeId])
+  @@index([userId])
+  @@index([createdAt])
+
+  @@map("code_chats")
+}
+
+model CodeRefactor {
+  id String @id @default(cuid())
+
+  organizationId String
+  generatedCodeId String
+
+  userId String
+
+  reason String?
+
+  originalContent String
+
+  refactoredContent String
+
+  modelProvider ModelProvider
+
+  modelName String
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationCodeRefactors", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  generatedCode GeneratedCode @relation("GeneratedCodeRefactors", fields: [generatedCodeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  user User @relation("UserCodeRefactors", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([generatedCodeId])
+  @@index([userId])
+  @@index([createdAt])
+
+  @@map("code_refactors")
+}

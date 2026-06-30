@@ -1,0 +1,273 @@
+enum PullRequestStatus {
+  OPEN
+  APPROVED
+  MERGED
+  CLOSED
+}
+
+enum PullRequestReviewStatus {
+  COMMENTED
+  APPROVED
+  CHANGES_REQUESTED
+  DISMISSED
+}
+
+enum PullRequestMergeStatus {
+  PENDING
+  MERGED
+  FAILED
+  REVERTED
+}
+
+enum Environment {
+  DEVELOPMENT
+  QA
+  STAGING
+  PRODUCTION
+}
+
+model Branch {
+  id String @id @default(cuid())
+
+  organizationId String
+  repositoryId   String
+
+  name String
+
+  baseBranch String
+
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationBranches", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  repository Repository @relation("RepositoryBranches", fields: [repositoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  commits Commit[] @relation("BranchCommits")
+
+  pullRequests PullRequest[] @relation("BranchPullRequests")
+
+  @@unique([repositoryId, name])
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([createdAt])
+
+  @@map("branches")
+}
+
+model Commit {
+  id String @id @default(cuid())
+
+  organizationId String
+  repositoryId   String
+  branchId       String
+
+  commitSha String @unique
+
+  message String
+
+  authorName  String?
+  authorEmail String?
+
+  committedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationCommits", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  repository Repository @relation("RepositoryCommits", fields: [repositoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  branch Branch @relation("BranchCommits", fields: [branchId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  pullRequests PullRequest[] @relation("CommitPullRequests")
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([branchId])
+  @@index([committedAt])
+  @@index([createdAt])
+
+  @@map("commits")
+}
+
+model PullRequest {
+  id String @id @default(cuid())
+
+  organizationId String
+  repositoryId   String
+  branchId       String
+  commitId       String?
+  generatedCodeId String
+
+  providerPrId String?
+
+  title       String
+  description String?
+
+  status PullRequestStatus @default(OPEN)
+
+  sourceBranch String
+  targetBranch String
+
+  url String?
+
+  openedAt DateTime?
+  mergedAt DateTime?
+  closedAt DateTime?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationPullRequests", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  repository Repository @relation("RepositoryPullRequests", fields: [repositoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  branch Branch @relation("BranchPullRequests", fields: [branchId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  commit Commit? @relation("CommitPullRequests", fields: [commitId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  generatedCode GeneratedCode @relation("GeneratedCodePullRequests", fields: [generatedCodeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  deploymentReports DeploymentReport[] @relation("PullRequestDeploymentReports")
+  reviews PullRequestReview[] @relation("PullRequestReviews")
+  mergeResult PullRequestMergeResult? @relation("PullRequestMergeResult")
+
+  @@index([organizationId])
+  @@index([repositoryId])
+  @@index([branchId])
+  @@index([commitId])
+  @@index([generatedCodeId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("pull_requests")
+}
+
+model PullRequestReview {
+  id String @id @default(cuid())
+
+  organizationId String
+  pullRequestId  String
+  reviewerId     String?
+
+  status PullRequestReviewStatus
+  comment String?
+  providerReviewId String?
+  reviewedAt DateTime?
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationPullRequestReviews", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  pullRequest PullRequest @relation("PullRequestReviews", fields: [pullRequestId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  reviewer User? @relation("UserPullRequestReviews", fields: [reviewerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([pullRequestId])
+  @@index([reviewerId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("pull_request_reviews")
+}
+
+model PullRequestMergeResult {
+  id String @id @default(cuid())
+
+  organizationId String
+  pullRequestId  String @unique
+  commitSha      String?
+
+  status PullRequestMergeStatus @default(PENDING)
+  mergedById String?
+  mergedAt DateTime?
+  errorMessage String?
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationPullRequestMergeResults", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  pullRequest PullRequest @relation("PullRequestMergeResult", fields: [pullRequestId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  mergedBy User? @relation("UserPullRequestMergeResults", fields: [mergedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([pullRequestId])
+  @@index([mergedById])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("pull_request_merge_results")
+}
+
+model DeploymentReport {
+  id String @id @default(cuid())
+
+  organizationId String
+  pullRequestId  String
+
+  environment Environment
+
+  status String
+
+  deploymentId String?
+
+  deployedAt DateTime?
+
+  durationMs Int?
+
+  logsUrl String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationDeploymentReports", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  pullRequest PullRequest @relation("PullRequestDeploymentReports", fields: [pullRequestId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([pullRequestId])
+  @@index([environment])
+  @@index([createdAt])
+
+  @@map("deployment_reports")
+}

@@ -1,11 +1,6 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
-  "globalDependencies": [
-    "tsconfig.base.json",
-    "eslint.config.mjs",
-    ".swcrc",
-    ".prettierrc"
-  ],
+  "globalDependencies": ["tsconfig.base.json", "eslint.config.mjs", ".swcrc", ".prettierrc"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

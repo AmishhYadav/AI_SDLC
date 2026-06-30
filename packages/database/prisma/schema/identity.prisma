@@ -1,0 +1,256 @@
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  INVITED
+  SUSPENDED
+}
+
+model User {
+  id String @id @default(cuid())
+
+  email String
+  firstName String
+  lastName String?
+  avatarUrl String?
+
+  status UserStatus @default(ACTIVE)
+
+  lastLoginAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organizations OrganizationMember[] @relation("UserOrganizations")
+
+  userRoles UserRole[] @relation("UserRoles")
+
+  sessions Session[] @relation("UserSessions")
+
+  preferences UserPreference[] @relation("UserPreferences")
+
+  developerReviews DeveloperReview[] @relation("UserDeveloperReviews")
+
+  codeChats CodeChat[] @relation("UserCodeChats")
+
+  codeRefactors CodeRefactor[] @relation("UserCodeRefactors")
+
+  notifications Notification[] @relation("UserNotifications")
+
+  auditLogs AuditLog[] @relation("UserAuditLogs")
+
+  requestedApprovals HumanApproval[] @relation("UserRequestedApprovals")
+
+  reviewedApprovals HumanApproval[] @relation("UserReviewedApprovals")
+
+  aiExecutions AiExecution[] @relation("UserAiExecutions")
+
+  pullRequestReviews PullRequestReview[] @relation("UserPullRequestReviews")
+
+  pullRequestMergeResults PullRequestMergeResult[] @relation("UserPullRequestMergeResults")
+
+  @@unique([email])
+
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("users")
+}
+
+model Role {
+  id String @id @default(cuid())
+
+  organizationId String
+
+  name        String
+  description String?
+
+  
+  isDefault Boolean @default(false)
+  isSystem Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationRoles", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  userRoles UserRole[] @relation("RoleUsers")
+
+  rolePermissions RolePermission[] @relation("RolePermissions")
+
+  @@unique([organizationId, name])
+
+  @@index([organizationId])
+  @@index([isSystem])
+  @@index([createdAt])
+
+  @@map("roles")
+}
+
+model Permission {
+  id String @id @default(cuid())
+
+  organizationId String
+
+  name        String
+  code        String
+  description String?
+  resource    String
+  action      String
+
+  isSystem Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationPermissions", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  rolePermissions RolePermission[] @relation("PermissionRoles")
+
+  @@unique([organizationId, code])
+
+  @@index([organizationId])
+  @@index([resource])
+  @@index([action])
+  @@index([createdAt])
+
+  @@map("permissions")
+}
+
+model UserRole {
+  id String @id @default(cuid())
+
+  userId               String
+  roleId               String
+  organizationMemberId String
+
+  assignedAt DateTime @default(now())
+  expiresAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  user User @relation("UserRoles", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  role Role @relation("RoleUsers", fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  organizationMember OrganizationMember @relation("OrganizationMemberRoles", fields: [organizationMemberId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([organizationMemberId, roleId])
+
+  @@index([userId])
+  @@index([roleId])
+  @@index([organizationMemberId])
+  @@index([createdAt])
+
+  @@map("user_roles")
+}
+
+model RolePermission {
+  id String @id @default(cuid())
+
+  roleId       String
+  permissionId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  role Role @relation("RolePermissions", fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  permission Permission @relation("PermissionRoles", fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([roleId, permissionId])
+
+  @@index([roleId])
+  @@index([permissionId])
+  @@index([createdAt])
+
+  @@map("role_permissions")
+}
+
+model Session {
+  id String @id @default(cuid())
+
+  userId String
+
+  hashedRefreshToken String
+
+  ipAddress String?
+
+  userAgent String?
+
+  expiresAt DateTime
+
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  user User @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@index([createdAt])
+
+  @@map("sessions")
+}
+
+model UserPreference {
+  id String @id @default(cuid())
+
+  userId String
+
+  theme String?
+
+  language String?
+
+  timezone String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  user User @relation("UserPreferences", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([userId])
+
+  @@index([createdAt])
+
+  @@map("user_preferences")
+}

@@ -1,0 +1,496 @@
+enum ModelProvider {
+  OPENAI
+  ANTHROPIC
+  GOOGLE
+  AWS_BEDROCK
+  AZURE_OPENAI
+}
+
+model Capability {
+  id String @id @default(cuid())
+
+  organizationId String
+
+  name        String
+  key         String
+  description String?
+
+  isEnabled Boolean @default(true)
+
+  version String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationCapabilities", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  prompts Prompt[] @relation("CapabilityPrompts")
+
+  models AiModel[] @relation("CapabilityModels")
+
+  graphs Graph[] @relation("CapabilityGraphs")
+
+  @@unique([organizationId, key])
+
+  @@index([organizationId])
+  @@index([isEnabled])
+  @@index([createdAt])
+
+  @@map("capabilities")
+}
+
+model Prompt {
+  id String @id @default(cuid())
+
+  organizationId String
+  capabilityId   String
+
+  name        String
+  version     String
+  description String?
+
+  systemPrompt String
+
+  userTemplate String?
+
+  variables Json?
+
+  isActive Boolean @default(true)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationPrompts", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  capability Capability @relation("CapabilityPrompts", fields: [capabilityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  aiExecutions AiExecution[] @relation("PromptAiExecutions")
+
+  @@unique([capabilityId, name, version])
+
+  @@index([organizationId])
+  @@index([capabilityId])
+  @@index([isActive])
+  @@index([createdAt])
+
+  @@map("prompts")
+}
+
+model AiModel {
+  id String @id @default(cuid())
+
+  organizationId String
+  capabilityId   String
+
+  provider ModelProvider
+
+  name         String
+  modelId      String
+  displayName  String?
+
+  isDefault Boolean @default(false)
+  isEnabled Boolean @default(true)
+
+  maxTokens Int?
+
+  temperature Float?
+
+  topP Float?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationModels", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  capability Capability @relation("CapabilityModels", fields: [capabilityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  aiExecutions AiExecution[] @relation("ModelAiExecutions")
+
+  @@unique([organizationId, provider, modelId])
+
+  @@index([organizationId])
+  @@index([capabilityId])
+  @@index([provider])
+  @@index([isEnabled])
+  @@index([createdAt])
+
+  @@map("models")
+}
+
+enum GraphType {
+  REPOSITORY
+  DOCUMENTATION
+  PLANNING
+  DEVELOPMENT
+  VALIDATION
+  TESTING
+  DELIVERY
+  LEARNING
+}
+
+model Graph {
+  id String @id @default(cuid())
+
+  organizationId String
+  capabilityId   String
+
+  name        String
+  version     String
+
+  type GraphType
+
+  description String?
+
+  entryNode String?
+
+  definition Json
+
+  isActive Boolean @default(true)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationGraphs", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  capability Capability @relation("CapabilityGraphs", fields: [capabilityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  workflowRuns WorkflowRun[] @relation("GraphWorkflowRuns")
+
+  @@unique([capabilityId, name, version])
+
+  @@index([organizationId])
+  @@index([capabilityId])
+  @@index([type])
+  @@index([isActive])
+  @@index([createdAt])
+
+  @@map("graphs")
+}
+
+enum WorkflowStatus {
+  PENDING
+  RUNNING
+  WAITING_FOR_APPROVAL
+  FAILED
+  COMPLETED
+  CANCELLED
+}
+
+enum WorkflowEventType {
+  STARTED
+  NODE_STARTED
+  NODE_COMPLETED
+  CHECKPOINT_CREATED
+  APPROVAL_REQUESTED
+  APPROVAL_COMPLETED
+  RETRY_SCHEDULED
+  FAILED
+  COMPLETED
+  CANCELLED
+}
+
+enum HumanApprovalStage {
+  BRD
+  TSD
+  LLD
+  GENERATED_CODE
+  PULL_REQUEST
+}
+
+enum HumanApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+  CANCELLED
+}
+
+enum AiExecutionStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  RETRIED
+  CANCELLED
+}
+
+model WorkflowRun {
+  id String @id @default(cuid())
+
+  organizationId String
+  graphId         String
+
+  status WorkflowStatus @default(PENDING)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  triggeredBy String?
+
+  executionTimeMs Int?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationWorkflowRuns", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  graph Graph @relation("GraphWorkflowRuns", fields: [graphId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  workflowStates WorkflowState[] @relation("WorkflowRunStates")
+  workflowCheckpoints WorkflowCheckpoint[] @relation("WorkflowRunCheckpoints")
+  workflowEvents WorkflowEvent[] @relation("WorkflowRunEvents")
+  humanApprovals HumanApproval[] @relation("WorkflowRunHumanApprovals")
+  aiExecutions AiExecution[] @relation("WorkflowRunAiExecutions")
+
+  auditLogs AuditLog[] @relation("WorkflowRunAuditLogs")
+
+  @@index([organizationId])
+  @@index([graphId])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("workflow_runs")
+}
+
+model WorkflowState {
+  id String @id @default(cuid())
+
+  workflowRunId String
+
+  nodeName String
+
+  state Json
+
+  checkpoint Int @default(0)
+
+  isCurrent Boolean @default(true)
+
+  startedAt DateTime?
+
+  completedAt DateTime?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  workflowRun WorkflowRun @relation("WorkflowRunStates", fields: [workflowRunId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([workflowRunId])
+  @@index([nodeName])
+  @@index([isCurrent])
+  @@index([createdAt])
+
+  @@map("workflow_states")
+}
+
+model WorkflowCheckpoint {
+  id String @id @default(cuid())
+
+  organizationId String
+  workflowRunId  String
+
+  sequence Int
+  nodeName String
+
+  stateSnapshot Json
+  contextSnapshot Json?
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationWorkflowCheckpoints", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  workflowRun WorkflowRun @relation("WorkflowRunCheckpoints", fields: [workflowRunId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([workflowRunId, sequence])
+
+  @@index([organizationId])
+  @@index([workflowRunId])
+  @@index([nodeName])
+  @@index([createdAt])
+
+  @@map("workflow_checkpoints")
+}
+
+model WorkflowEvent {
+  id String @id @default(cuid())
+
+  organizationId String
+  workflowRunId  String
+
+  type WorkflowEventType
+  nodeName String?
+  status WorkflowStatus?
+  message String?
+  payload Json?
+
+  occurredAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationWorkflowEvents", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  workflowRun WorkflowRun @relation("WorkflowRunEvents", fields: [workflowRunId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([workflowRunId])
+  @@index([type])
+  @@index([occurredAt])
+  @@index([createdAt])
+
+  @@map("workflow_events")
+}
+
+model HumanApproval {
+  id String @id @default(cuid())
+
+  organizationId String
+  workflowRunId  String?
+  requestedById  String?
+  reviewerId     String?
+
+  stage  HumanApprovalStage
+  status HumanApprovalStatus @default(PENDING)
+
+  resourceType String
+  resourceId   String
+
+  requestedAt DateTime @default(now())
+  reviewedAt  DateTime?
+  comments    String?
+  metadata    Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationHumanApprovals", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  workflowRun WorkflowRun? @relation("WorkflowRunHumanApprovals", fields: [workflowRunId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  requestedBy User? @relation("UserRequestedApprovals", fields: [requestedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  reviewer User? @relation("UserReviewedApprovals", fields: [reviewerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([workflowRunId])
+  @@index([requestedById])
+  @@index([reviewerId])
+  @@index([stage])
+  @@index([status])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+
+  @@map("human_approvals")
+}
+
+model AiExecution {
+  id String @id @default(cuid())
+
+  organizationId  String
+  workflowRunId   String?
+  promptId        String?
+  modelId         String?
+  userId          String?
+  generatedCodeId String?
+
+  capabilityKey String?
+  status        AiExecutionStatus @default(PENDING)
+
+  modelProvider ModelProvider
+  modelName     String
+  promptVersion String?
+
+  promptTokens     Int?
+  completionTokens Int?
+  totalTokens      Int?
+  cost             Decimal? @db.Decimal(10, 4)
+  latencyMs        Int?
+  retryCount       Int @default(0)
+
+  requestMetadata  Json?
+  responseMetadata Json?
+  errorMessage     String?
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationAiExecutions", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  workflowRun WorkflowRun? @relation("WorkflowRunAiExecutions", fields: [workflowRunId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  prompt Prompt? @relation("PromptAiExecutions", fields: [promptId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  model AiModel? @relation("ModelAiExecutions", fields: [modelId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  user User? @relation("UserAiExecutions", fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  generatedCode GeneratedCode? @relation("GeneratedCodeAiExecutions", fields: [generatedCodeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([workflowRunId])
+  @@index([promptId])
+  @@index([modelId])
+  @@index([userId])
+  @@index([generatedCodeId])
+  @@index([modelProvider])
+  @@index([status])
+  @@index([createdAt])
+
+  @@map("ai_executions")
+}

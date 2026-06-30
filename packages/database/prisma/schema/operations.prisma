@@ -1,0 +1,218 @@
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXECUTE
+  APPROVE
+  REJECT
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  organizationId String
+
+  userId String?
+
+  action AuditAction
+
+  resource String
+
+  resourceId String?
+
+  workflowRunId String?
+
+  details Json?
+
+  ipAddress String?
+
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  organization Organization @relation("OrganizationAuditLogs", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  user User? @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  workflowRun WorkflowRun? @relation("WorkflowRunAuditLogs", fields: [workflowRunId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+
+  @@map("audit_logs")
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+model Notification {
+  id String @id @default(cuid())
+
+  organizationId String
+
+  userId String
+
+  type NotificationType
+
+  title String
+
+  message String
+
+  isRead Boolean @default(false)
+
+  readAt DateTime?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization @relation("OrganizationNotifications", fields: [organizationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+
+  @@map("notifications")
+}
+
+model Configuration {
+  id String @id @default(cuid())
+
+  organizationId String?
+
+  key String
+
+  value Json
+
+  description String?
+
+  isSystem Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization? @relation("OrganizationConfigurations", fields: [organizationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([organizationId, key])
+
+  @@index([organizationId])
+  @@index([key])
+  @@index([isSystem])
+  @@index([createdAt])
+
+  @@map("configurations")
+}
+
+enum MetricType {
+  COUNTER
+  GAUGE
+  HISTOGRAM
+  TIMER
+}
+
+model Metric {
+  id String @id @default(cuid())
+
+  organizationId String?
+
+  name String
+
+  type MetricType
+
+  value Float
+
+  unit String?
+
+  tags Json?
+
+  recordedAt DateTime @default(now())
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization? @relation("OrganizationMetrics", fields: [organizationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([name])
+  @@index([type])
+  @@index([recordedAt])
+  @@index([createdAt])
+
+  @@map("metrics")
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Alert {
+  id String @id @default(cuid())
+
+  organizationId String?
+
+  name String
+
+  severity AlertSeverity
+
+  source String?
+
+  message String
+
+  isResolved Boolean @default(false)
+
+  resolvedAt DateTime?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+  deletedBy String?
+
+  // Relations
+  organization Organization? @relation("OrganizationAlerts", fields: [organizationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([organizationId])
+  @@index([severity])
+  @@index([isResolved])
+  @@index([createdAt])
+
+  @@map("alerts")
+}
