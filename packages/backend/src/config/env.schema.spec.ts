@@ -58,4 +58,42 @@ describe('envSchema', () => {
       }),
     ).toThrow();
   });
+
+  it('Test 7: parses valid env with CORS_ORIGINS and defaults LOG_LEVEL, THROTTLER values', () => {
+    const result = envSchema.parse({
+      DATABASE_URL: 'postgresql://a:b@localhost/db',
+      CORS_ORIGINS: 'http://localhost:3001',
+    });
+    expect(result.LOG_LEVEL).toBe('info');
+    expect(result.THROTTLER_TTL_SECONDS).toBe(60);
+    expect(result.THROTTLER_LIMIT).toBe(100);
+  });
+
+  it('Test 8: throws ZodError when CORS_ORIGINS is missing (no default)', () => {
+    expect(() =>
+      envSchema.parse({
+        DATABASE_URL: 'postgresql://x',
+        NODE_ENV: 'test',
+      }),
+    ).toThrow();
+  });
+
+  it('Test 9: throws ZodError when LOG_LEVEL is not in allowed enum', () => {
+    expect(() =>
+      envSchema.parse({
+        DATABASE_URL: 'postgresql://x',
+        CORS_ORIGINS: 'http://localhost:3001',
+        LOG_LEVEL: 'invalid',
+      }),
+    ).toThrow();
+  });
+
+  it('Test 10: coerces THROTTLER_TTL_SECONDS string to number', () => {
+    const result = envSchema.parse({
+      DATABASE_URL: 'postgresql://x',
+      CORS_ORIGINS: 'http://localhost:3001',
+      THROTTLER_TTL_SECONDS: '30',
+    });
+    expect(result.THROTTLER_TTL_SECONDS).toBe(30);
+  });
 });
