@@ -104,8 +104,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion; Plans 02 and 03 run in parallel)*
 
-- [ ] 03-02-PLAN.md — ALS/logging foundation: env schema extension (CORS_ORIGINS, LOG_LEVEL, THROTTLER_*), nestjs-cls ClsModule + nestjs-pino LoggerModule, correlation ID migration to ALS, GlobalExceptionFilter updated (INFRA-04)
-- [ ] 03-03-PLAN.md — Audit/idempotency/conventions seams: @RawResponse() decorator, IAuditContextProvider seam + @Audit() + AuditInterceptor, IdempotencyStore seam, createErrorCatalog helper (INFRA-09, SEAM-06)
+- [x] 03-02-PLAN.md — ALS/logging foundation: env schema extension (CORS_ORIGINS, LOG_LEVEL, THROTTLER_*), nestjs-cls ClsModule + nestjs-pino LoggerModule, correlation ID migration to ALS, GlobalExceptionFilter updated (INFRA-04)
+- [x] 03-03-PLAN.md — Audit/idempotency/conventions seams: @RawResponse() decorator, IAuditContextProvider seam + @Audit() + AuditInterceptor, IdempotencyStore seam, createErrorCatalog helper (INFRA-09, SEAM-06)
 
 **Wave 3** *(blocked on Wave 2 completion; Plans 04 and 05 run in parallel)*
 
@@ -215,7 +215,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Monorepo & Tooling Foundation | 3/3 | Complete   | 2026-06-30 |
 | 2. Platform Kernel — Bootstrap, Config & Error Contract | 4/4 | Complete   | 2026-06-30 |
-| 3. Platform Kernel — Observability, Validation, Security & Health | 1/6 | In Progress|  |
+| 3. Platform Kernel — Observability, Validation, Security & Health | 3/6 | In Progress|  |
 | 4. Authentication (Entra ID) Infrastructure | 0/3 | Not started | - |
 | 5. RBAC Authorization Infrastructure | 0/2 | Not started | - |
 | 6. Tenancy & Organization Foundation | 0/4 | Not started | - |
