@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { describe, it, expect } from 'vitest';
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
