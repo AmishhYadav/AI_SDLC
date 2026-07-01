@@ -4,11 +4,11 @@ import { GlobalExceptionFilter } from './global-exception.filter';
 import { PLATFORM_ERROR_CODES } from './error-codes';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function makeHost(traceId?: string): any {
+function makeHost(): any {
   const json = vi.fn();
   const status = vi.fn().mockReturnValue({ json });
   const getResponse = vi.fn().mockReturnValue({ status });
-  const getRequest = vi.fn().mockReturnValue({ traceId });
+  const getRequest = vi.fn().mockReturnValue({});
   return { switchToHttp: () => ({ getResponse, getRequest }) };
 }
 
@@ -17,10 +17,15 @@ function makeConfig(isProduction = false): any {
   return { isProduction };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeCls(id = 'test-trace-id'): any {
+  return { getId: vi.fn().mockReturnValue(id) };
+}
+
 describe('GlobalExceptionFilter', () => {
   it('returns error envelope for HttpException', () => {
-    const filter = new GlobalExceptionFilter(makeConfig());
-    const host = makeHost('test-uuid');
+    const filter = new GlobalExceptionFilter(makeConfig(), makeCls('test-uuid'));
+    const host = makeHost();
     filter.catch(new HttpException('Not found', HttpStatus.NOT_FOUND), host);
     const response = host.switchToHttp().getResponse();
     const body = response.status.mock.results[0].value.json.mock.calls[0][0];
@@ -31,7 +36,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('maps HTTP status codes to correct error codes', () => {
-    const filter = new GlobalExceptionFilter(makeConfig());
+    const filter = new GlobalExceptionFilter(makeConfig(), makeCls());
     const cases: [number, string][] = [
       [HttpStatus.NOT_FOUND, PLATFORM_ERROR_CODES.NOT_FOUND],
       [HttpStatus.CONFLICT, PLATFORM_ERROR_CODES.RESOURCE_CONFLICT],
@@ -39,7 +44,7 @@ describe('GlobalExceptionFilter', () => {
       [HttpStatus.UNPROCESSABLE_ENTITY, PLATFORM_ERROR_CODES.VALIDATION_ERROR],
     ];
     for (const [httpStatus, expectedCode] of cases) {
-      const host = makeHost('x');
+      const host = makeHost();
       filter.catch(new HttpException('msg', httpStatus), host);
       const response = host.switchToHttp().getResponse();
       const body = response.status.mock.results[0].value.json.mock.calls[0][0];
@@ -48,8 +53,8 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('uses INTERNAL_ERROR for unmapped HTTP status codes', () => {
-    const filter = new GlobalExceptionFilter(makeConfig());
-    const host = makeHost('x');
+    const filter = new GlobalExceptionFilter(makeConfig(), makeCls());
+    const host = makeHost();
     filter.catch(new HttpException('Forbidden', HttpStatus.FORBIDDEN), host);
     const response = host.switchToHttp().getResponse();
     const body = response.status.mock.results[0].value.json.mock.calls[0][0];
@@ -57,8 +62,8 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('uses INTERNAL_ERROR for non-HttpExceptions', () => {
-    const filter = new GlobalExceptionFilter(makeConfig());
-    const host = makeHost('x');
+    const filter = new GlobalExceptionFilter(makeConfig(), makeCls());
+    const host = makeHost();
     filter.catch(new Error('crash'), host);
     const response = host.switchToHttp().getResponse();
     const body = response.status.mock.results[0].value.json.mock.calls[0][0];
@@ -66,8 +71,8 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('joins array message with semicolons', () => {
-    const filter = new GlobalExceptionFilter(makeConfig());
-    const host = makeHost('x');
+    const filter = new GlobalExceptionFilter(makeConfig(), makeCls());
+    const host = makeHost();
     filter.catch(
       new HttpException({ message: ['name must be a string', 'email is invalid'] }, HttpStatus.BAD_REQUEST),
       host,
@@ -78,8 +83,8 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('omits stack in production', () => {
-    const filter = new GlobalExceptionFilter(makeConfig(true));
-    const host = makeHost('x');
+    const filter = new GlobalExceptionFilter(makeConfig(true), makeCls());
+    const host = makeHost();
     filter.catch(new Error('boom'), host);
     const response = host.switchToHttp().getResponse();
     const body = response.status.mock.results[0].value.json.mock.calls[0][0];
@@ -87,34 +92,34 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('includes stack in development', () => {
-    const filter = new GlobalExceptionFilter(makeConfig(false));
-    const host = makeHost('x');
+    const filter = new GlobalExceptionFilter(makeConfig(false), makeCls());
+    const host = makeHost();
     filter.catch(new Error('boom'), host);
     const response = host.switchToHttp().getResponse();
     const body = response.status.mock.results[0].value.json.mock.calls[0][0];
     expect(body['stack']).toBeDefined();
   });
 
-  it('reads traceId from request', () => {
-    const filter = new GlobalExceptionFilter(makeConfig());
-    const host = makeHost('test-id');
+  it('reads traceId from CLS (not request object)', () => {
+    const filter = new GlobalExceptionFilter(makeConfig(), makeCls('expected-id'));
+    const host = makeHost();
     filter.catch(new Error('any'), host);
     const response = host.switchToHttp().getResponse();
     const body = response.status.mock.results[0].value.json.mock.calls[0][0];
-    expect(body.traceId).toBe('test-id');
+    expect(body.traceId).toBe('expected-id');
   });
 
   it('sets response status to HttpException status', () => {
-    const filter = new GlobalExceptionFilter(makeConfig());
-    const host = makeHost('x');
+    const filter = new GlobalExceptionFilter(makeConfig(), makeCls());
+    const host = makeHost();
     filter.catch(new HttpException('Not found', HttpStatus.NOT_FOUND), host);
     const response = host.switchToHttp().getResponse();
     expect(response.status.mock.calls[0][0]).toBe(404);
   });
 
   it('sets response status to 500 for non-HttpException', () => {
-    const filter = new GlobalExceptionFilter(makeConfig());
-    const host = makeHost('x');
+    const filter = new GlobalExceptionFilter(makeConfig(), makeCls());
+    const host = makeHost();
     filter.catch(new Error('boom'), host);
     const response = host.switchToHttp().getResponse();
     expect(response.status.mock.calls[0][0]).toBe(500);

@@ -7,6 +7,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { ClsService } from 'nestjs-cls';
 import { AppConfigService } from '../../config/app-config.service';
 import { PLATFORM_ERROR_CODES, PlatformErrorCode } from './error-codes';
 
@@ -21,7 +22,10 @@ const HTTP_STATUS_TO_ERROR_CODE: Partial<Record<number, PlatformErrorCode>> = {
 @Catch()
 @Injectable()
 export class GlobalExceptionFilter implements ExceptionFilter {
-  constructor(private readonly config: AppConfigService) {}
+  constructor(
+    private readonly config: AppConfigService,
+    private readonly cls: ClsService,
+  ) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
@@ -53,7 +57,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       success: false,
       errorCode,
       message,
-      traceId: request.traceId ?? crypto.randomUUID(),
+      traceId: this.cls.getId() ?? crypto.randomUUID(),
     };
 
     if (!this.config.isProduction && exception instanceof Error) {
