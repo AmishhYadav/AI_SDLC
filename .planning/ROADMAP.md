@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Monorepo & Tooling Foundation** - Workspaces, strict TS/ESLint/Prettier/Vitest/Nest tooling, and the urgent `.env` + credential remediation (completed 2026-06-30)
 - [x] **Phase 2: Platform Kernel — Bootstrap, Config & Error Contract** - `/api/v1` bootstrap, fail-fast typed config, the global error envelope, and Prisma integration (completed 2026-06-30)
-- [ ] **Phase 3: Platform Kernel — Observability, Validation, Security & Health** - Structured logging, validation pipe, interceptors, health, Swagger, security baseline, shared conventions
+- [x] **Phase 3: Platform Kernel — Observability, Validation, Security & Health** - Structured logging, validation pipe, interceptors, health, Swagger, security baseline, shared conventions (completed 2026-07-01)
 - [ ] **Phase 4: Authentication (Entra ID) Infrastructure** - Swappable JWKS-based token validation, `@Public()`, `CurrentUser`, dev stub validator
 - [ ] **Phase 5: RBAC Authorization Infrastructure** - `@RequirePermissions()` + `PermissionsGuard` over the seeded permissions, independent of authN
 - [ ] **Phase 6: Tenancy & Organization Foundation** - Request-scoped tenant context, organization/member CRUD, isolation tests, enforcement-mechanism ADR
@@ -114,7 +114,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 03-06-PLAN.md — AppModule final wiring + security baseline: ValidationPipe (APP_PIPE), ThrottlerGuard (APP_GUARD), interceptor registration (LIFO order), Helmet/CORS/Swagger in main.ts, enableShutdownHooks, integration tests (INFRA-07, INFRA-11, INFRA-12, INFRA-13)
+- [x] 03-06-PLAN.md — AppModule final wiring + security baseline: ValidationPipe (APP_PIPE), ThrottlerGuard (APP_GUARD), interceptor registration (LIFO order), Helmet/CORS/Swagger in main.ts, enableShutdownHooks, integration tests (INFRA-07, INFRA-11, INFRA-12, INFRA-13)
 
 ### Phase 4: Authentication (Entra ID) Infrastructure
 
@@ -215,7 +215,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Monorepo & Tooling Foundation | 3/3 | Complete   | 2026-06-30 |
 | 2. Platform Kernel — Bootstrap, Config & Error Contract | 4/4 | Complete   | 2026-06-30 |
-| 3. Platform Kernel — Observability, Validation, Security & Health | 5/6 | In Progress|  |
+| 3. Platform Kernel — Observability, Validation, Security & Health | 6/6 | Complete   | 2026-07-01 |
 | 4. Authentication (Entra ID) Infrastructure | 0/3 | Not started | - |
 | 5. RBAC Authorization Infrastructure | 0/2 | Not started | - |
 | 6. Tenancy & Organization Foundation | 0/4 | Not started | - |
