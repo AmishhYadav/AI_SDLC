@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, VersioningType, Module } from '@nestjs/common';
+import { INestApplication, VersioningType, Module, Global } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaService, PrismaModule } from '@repo/database';
 import { AppModule } from './app.module';
@@ -10,6 +10,11 @@ process.env['DATABASE_URL'] = process.env['DATABASE_URL'] ?? 'postgresql://mock:
 process.env['NODE_ENV'] = process.env['NODE_ENV'] ?? 'test';
 process.env['CORS_ORIGINS'] = process.env['CORS_ORIGINS'] ?? 'http://localhost:3001';
 
+// @Global() is required because the real PrismaModule is @Global() in @repo/database.
+// HealthModule (now imported by AppModule) relies on PrismaService being globally provided.
+// Without @Global(), the MockPrismaModule's PrismaService export is scoped to AppModule
+// only and cannot be resolved by HealthModule's PrismaHealthIndicator.
+@Global()
 @Module({
   providers: [{ provide: PrismaService, useValue: { onModuleInit: async () => {} } }],
   exports: [PrismaService],
