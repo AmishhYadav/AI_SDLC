@@ -109,8 +109,8 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion; Plans 04 and 05 run in parallel)*
 
-- [ ] 03-04-PLAN.md — Validation + response envelope: CursorPaginationDto, PaginationMeta/PaginatedResult, ResponseEnvelopeInterceptor (INFRA-07, INFRA-08, SEAM-06)
-- [ ] 03-05-PLAN.md — Health module: PrismaHealthIndicator (terminus 11 API), liveness + readiness controller with @RawResponse() (INFRA-10)
+- [x] 03-04-PLAN.md — Validation + response envelope: CursorPaginationDto, PaginationMeta/PaginatedResult, ResponseEnvelopeInterceptor (INFRA-07, INFRA-08, SEAM-06)
+- [x] 03-05-PLAN.md — Health module: PrismaHealthIndicator (terminus 11 API), liveness + readiness controller with @RawResponse() (INFRA-10)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -215,7 +215,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Monorepo & Tooling Foundation | 3/3 | Complete   | 2026-06-30 |
 | 2. Platform Kernel — Bootstrap, Config & Error Contract | 4/4 | Complete   | 2026-06-30 |
-| 3. Platform Kernel — Observability, Validation, Security & Health | 3/6 | In Progress|  |
+| 3. Platform Kernel — Observability, Validation, Security & Health | 5/6 | In Progress|  |
 | 4. Authentication (Entra ID) Infrastructure | 0/3 | Not started | - |
 | 5. RBAC Authorization Infrastructure | 0/2 | Not started | - |
 | 6. Tenancy & Organization Foundation | 0/4 | Not started | - |
