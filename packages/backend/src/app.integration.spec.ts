@@ -8,6 +8,7 @@ import { AppModule } from './app.module';
 // Satisfy Zod validation in AppConfigModule before TestingModule.compile()
 process.env['DATABASE_URL'] = process.env['DATABASE_URL'] ?? 'postgresql://mock:mock@localhost:5432/mock';
 process.env['NODE_ENV'] = process.env['NODE_ENV'] ?? 'test';
+process.env['CORS_ORIGINS'] = process.env['CORS_ORIGINS'] ?? 'http://localhost:3001';
 
 @Module({
   providers: [{ provide: PrismaService, useValue: { onModuleInit: async () => {} } }],
