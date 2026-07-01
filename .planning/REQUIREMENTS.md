@@ -23,16 +23,16 @@ Requirements for this milestone. Each maps to exactly one roadmap phase (see Tra
 - [ ] **INFRA-01**: NestJS application bootstraps and serves all routes under `/api/v1` (URI versioning)
 - [ ] **INFRA-02**: All configuration is loaded through a typed config service with fail-fast env validation (Zod) at startup
 - [ ] **INFRA-03**: Direct `process.env` access is lint-banned outside the config module
-- [ ] **INFRA-04**: Requests emit structured JSON logs with a per-request correlation ID propagated via AsyncLocalStorage
+- [x] **INFRA-04**: Requests emit structured JSON logs with a per-request correlation ID propagated via AsyncLocalStorage
 - [ ] **INFRA-05**: A single global exception filter returns a consistent error envelope `{ success, errorCode, message, traceId }`
 - [ ] **INFRA-06**: The exception filter maps Prisma errors to HTTP status (e.g. `P2002`→409, `P2025`→404) and never leaks stack traces in production
-- [ ] **INFRA-07**: A global validation pipe rejects unknown fields (`whitelist` + `forbidNonWhitelisted`) and transforms typed DTOs
-- [ ] **INFRA-08**: A response interceptor wraps successful responses in a standard envelope, with a `@RawResponse()` escape hatch
-- [ ] **INFRA-09**: An audit interceptor records mutating operations to the `AuditLog` model
-- [ ] **INFRA-10**: Liveness and readiness health endpoints exist; readiness verifies database connectivity via Terminus
-- [ ] **INFRA-11**: Swagger/OpenAPI documentation is generated and served for the `/api/v1` surface
-- [ ] **INFRA-12**: Security baseline is enabled: helmet headers, CORS allowlist, and request rate limiting (throttler)
-- [ ] **INFRA-13**: The application shuts down gracefully, closing the Prisma connection via a typed lifecycle hook
+- [x] **INFRA-07**: A global validation pipe rejects unknown fields (`whitelist` + `forbidNonWhitelisted`) and transforms typed DTOs
+- [x] **INFRA-08**: A response interceptor wraps successful responses in a standard envelope, with a `@RawResponse()` escape hatch
+- [x] **INFRA-09**: An audit interceptor records mutating operations to the `AuditLog` model
+- [x] **INFRA-10**: Liveness and readiness health endpoints exist; readiness verifies database connectivity via Terminus
+- [x] **INFRA-11**: Swagger/OpenAPI documentation is generated and served for the `/api/v1` surface
+- [x] **INFRA-12**: Security baseline is enabled: helmet headers, CORS allowlist, and request rate limiting (throttler)
+- [x] **INFRA-13**: The application shuts down gracefully, closing the Prisma connection via a typed lifecycle hook
 - [ ] **INFRA-14**: Prisma is integrated solely through the existing `@repo/database` package with zero schema changes
 
 ### Authentication (Entra ID)
@@ -74,7 +74,7 @@ Requirements for this milestone. Each maps to exactly one roadmap phase (see Tra
 - [ ] **SEAM-03**: An `AiOrchestrationPort` is defined and provided as a stub, so business domains depend only on the port
 - [ ] **SEAM-04**: Direct LLM-provider SDK imports are lint-banned outside `modules/ai-platform/`
 - [ ] **SEAM-05**: An org-scoped, soft-delete-aware `BaseRepository` is available for domain repositories
-- [ ] **SEAM-06**: Shared conventions exist for pagination, idempotency keys, and a documented error-code catalog
+- [x] **SEAM-06**: Shared conventions exist for pagination, idempotency keys, and a documented error-code catalog
 
 ### Domain Scaffolding & Boundary Enforcement
 
@@ -138,15 +138,15 @@ Which phases cover which requirements. Populated during roadmap creation (2026-0
 | INFRA-05 | Phase 2 | Pending |
 | INFRA-06 | Phase 2 | Pending |
 | INFRA-14 | Phase 2 | Pending |
-| INFRA-04 | Phase 3 | Pending |
-| INFRA-07 | Phase 3 | Pending |
-| INFRA-08 | Phase 3 | Pending |
-| INFRA-09 | Phase 3 | Pending |
-| INFRA-10 | Phase 3 | Pending |
-| INFRA-11 | Phase 3 | Pending |
-| INFRA-12 | Phase 3 | Pending |
-| INFRA-13 | Phase 3 | Pending |
-| SEAM-06 | Phase 3 | Pending |
+| INFRA-04 | Phase 3 | Complete |
+| INFRA-07 | Phase 3 | Complete |
+| INFRA-08 | Phase 3 | Complete |
+| INFRA-09 | Phase 3 | Complete |
+| INFRA-10 | Phase 3 | Complete |
+| INFRA-11 | Phase 3 | Complete |
+| INFRA-12 | Phase 3 | Complete |
+| INFRA-13 | Phase 3 | Complete |
+| SEAM-06 | Phase 3 | Complete |
 | AUTH-01 | Phase 4 | Pending |
 | AUTH-02 | Phase 4 | Pending |
 | AUTH-03 | Phase 4 | Pending |
