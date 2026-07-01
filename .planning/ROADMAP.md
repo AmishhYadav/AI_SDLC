@@ -129,8 +129,21 @@ Plans:
   4. Handlers can resolve a `CurrentUser` principal carrying user/org identity claims.
   5. A stub/dev validator lets local development and tests authenticate without a live Entra tenant.
 
-**Plans**: TBD (~3 estimated)
-**Research flag**: Verify Entra JWKS validation specifics (`iss`/`aud`/v2.0 issuer formats, key caching) against current Microsoft docs at plan time — library landscape is actively shifting (MEDIUM confidence).
+**Plans**: 3 plans
+Plans:
+**Wave 1** *(no dependencies)*
+
+- [ ] 04-01-PLAN.md — Package install + env schema extension (AUTH_MODE, ENTRA_* + superRefine) + type contracts (CurrentUser, TokenValidator, @Public(), @GetCurrentUser())
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 04-02-PLAN.md — EntraTokenValidator + StubTokenValidator + AuthAuditContextProvider + AuthModule + JwtAuthGuard + AppModule wiring + HealthController @Public()
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 04-03-PLAN.md — Unit tests (guard, validators, env schema extension) + integration test suite extension
+
+**Research flag (resolved)**: Entra v2.0 JWKS specifics verified at plan time (HIGH confidence). Key finding: `upn` is v1.0-only; v2.0 email mapping is `preferred_username ?? email`. `aud` = client ID GUID. `iss` = `https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0`.
 
 ### Phase 5: RBAC Authorization Infrastructure
 
