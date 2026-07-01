@@ -96,7 +96,25 @@ Plans:
   4. Liveness returns 200 always; readiness fails when the database is unreachable (Terminus DB ping); Swagger/OpenAPI documents the `/api/v1` surface.
   5. Helmet headers, a CORS allowlist, and request rate limiting are enforced; the app shuts down gracefully closing the Prisma connection; shared pagination, idempotency-key, and error-code-catalog conventions are documented and importable.
 
-**Plans**: TBD (~5 estimated)
+**Plans**: 6 plans
+Plans:
+**Wave 1** *(no dependencies)*
+
+- [ ] 03-01-PLAN.md — Package legitimacy gate + install all 10 runtime dependencies into @repo/backend
+
+**Wave 2** *(blocked on Wave 1 completion; Plans 02 and 03 run in parallel)*
+
+- [ ] 03-02-PLAN.md — ALS/logging foundation: env schema extension (CORS_ORIGINS, LOG_LEVEL, THROTTLER_*), nestjs-cls ClsModule + nestjs-pino LoggerModule, correlation ID migration to ALS, GlobalExceptionFilter updated (INFRA-04)
+- [ ] 03-03-PLAN.md — Audit/idempotency/conventions seams: @RawResponse() decorator, IAuditContextProvider seam + @Audit() + AuditInterceptor, IdempotencyStore seam, createErrorCatalog helper (INFRA-09, SEAM-06)
+
+**Wave 3** *(blocked on Wave 2 completion; Plans 04 and 05 run in parallel)*
+
+- [ ] 03-04-PLAN.md — Validation + response envelope: CursorPaginationDto, PaginationMeta/PaginatedResult, ResponseEnvelopeInterceptor (INFRA-07, INFRA-08, SEAM-06)
+- [ ] 03-05-PLAN.md — Health module: PrismaHealthIndicator (terminus 11 API), liveness + readiness controller with @RawResponse() (INFRA-10)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 03-06-PLAN.md — AppModule final wiring + security baseline: ValidationPipe (APP_PIPE), ThrottlerGuard (APP_GUARD), interceptor registration (LIFO order), Helmet/CORS/Swagger in main.ts, enableShutdownHooks, integration tests (INFRA-07, INFRA-11, INFRA-12, INFRA-13)
 
 ### Phase 4: Authentication (Entra ID) Infrastructure
 
@@ -197,7 +215,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Monorepo & Tooling Foundation | 3/3 | Complete   | 2026-06-30 |
 | 2. Platform Kernel — Bootstrap, Config & Error Contract | 4/4 | Complete   | 2026-06-30 |
-| 3. Platform Kernel — Observability, Validation, Security & Health | 0/5 | Not started | - |
+| 3. Platform Kernel — Observability, Validation, Security & Health | 0/6 | Not started | - |
 | 4. Authentication (Entra ID) Infrastructure | 0/3 | Not started | - |
 | 5. RBAC Authorization Infrastructure | 0/2 | Not started | - |
 | 6. Tenancy & Organization Foundation | 0/4 | Not started | - |
