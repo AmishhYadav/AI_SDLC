@@ -940,21 +940,24 @@ async listOrganizations(@Query() query: CursorPaginationDto) {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Can ClsService be injected into nestjs-pino's forRootAsync factory?**
    - What we know: `LoggerModule.forRootAsync` supports `imports` and `inject` arrays like any NestJS async factory.
    - What's unclear: Whether ClsModule must be listed in the useFactory `imports` or whether it's available globally once ClsModule.forRoot is in AppModule.
    - Recommendation: Try `inject: [AppConfigService, ClsService]` + `imports: [AppConfigModule]`. If ClsModule is global (it is with `global: true`), ClsService should be injectable without re-importing.
+   - RESOLVED: Plan 03-02 Task 2 injects [AppConfigService, ClsService] into LoggerModule.forRootAsync — works because ClsModule is global.
 
 2. **How should the ResponseEnvelopeInterceptor handle paginated responses?**
    - What we know: D-05 says `meta` is `null` for single-resource and populated for lists.
    - What's unclear: Whether the interceptor detects `{ data, meta }` shape from handlers, or whether handlers explicitly build the full envelope and use `@RawResponse()`.
    - Recommendation: Interceptor detects if response has `.data` and `.meta` properties; if so, forward both. Otherwise, treat response as `data`, set `meta: null`. Define a `PaginatedResult<T>` type for handlers to return.
+   - RESOLVED: Plan 03-04 Task 2 uses an isPaginated discriminator on the { data, meta } shape (PaginatedResult<T> marker).
 
 3. **Which THROTTLER_TTL env var naming is clearest for operators?**
    - What we know: @nestjs/throttler v6 uses milliseconds internally; `seconds()` helper exists.
    - Recommendation: `THROTTLER_TTL_SECONDS` (operator sets 60, env schema coerces, factory calls `seconds(config.get('THROTTLER_TTL_SECONDS'))`) for clarity.
+   - RESOLVED: THROTTLER_TTL_SECONDS used consistently across Plans 03-02 and 03-06.
 
 ---
 

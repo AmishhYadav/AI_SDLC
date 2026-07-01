@@ -52,7 +52,7 @@ updated: 2026-07-01
 | 03-05-T1 | 03-05 | 3 | INFRA-10 | T-03-06, T-03-09 | PrismaHealthIndicator uses HealthIndicatorService (not deprecated HealthIndicator class) | Build | `pnpm --filter @repo/backend typecheck` | N/A | ⬜ |
 | 03-05-T2 | 03-05 | 3 | INFRA-10 | T-03-06 | Liveness 200; readiness 200 healthy; readiness 503 broken DB; liveness has no 'success' key | Integration | `pnpm --filter @repo/backend test run` | ❌ health.controller.spec.ts (Wave 0 — created in this task) | ⬜ |
 | 03-06-T1 | 03-06 | 4 | INFRA-07, INFRA-12, INFRA-13 | T-03-05, T-03-07, T-03-10, T-03-12 | APP_PIPE+APP_GUARD+APP_INTERCEPTOR x2 wired; ThrottlerModule uses seconds(); bufferLogs+enableShutdownHooks in main.ts | Build | `pnpm --filter @repo/backend build && pnpm --filter @repo/backend test run` | ✅ (extend app.module.ts + main.ts) | ⬜ |
-| 03-06-T2 | 03-06 | 4 | INFRA-11, INFRA-12 | T-03-07, T-03-08, T-03-11 | Helmet headers present; traceId ALS propagation end-to-end; Swagger in dev; CORS allowlist enforced; ValidationPipe rejects unknown fields | Integration | `pnpm --filter @repo/backend test run` | ✅ (extend app.integration.spec.ts) | ⬜ |
+| 03-06-T2 | 03-06 | 4 | INFRA-11, INFRA-12 | T-03-07, T-03-08, T-03-10, T-03-11 | Helmet headers present; traceId ALS propagation end-to-end; Swagger in dev (wired in test setup via SwaggerModule.setup); CORS allowlist enforced; ValidationPipe rejects unknown fields; rate-limit returns HTTP 429 after THROTTLER_LIMIT exceeded | Integration | `pnpm --filter @repo/backend test run` | ✅ (extend app.integration.spec.ts) | ⬜ |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
