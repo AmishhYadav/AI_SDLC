@@ -7,6 +7,7 @@ import { IsString } from 'class-validator';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { AppConfigService } from './config/app-config.service';
 
 // Satisfy Zod validation in AppConfigModule before TestingModule.compile()
 process.env['DATABASE_URL'] = process.env['DATABASE_URL'] ?? 'postgresql://mock:mock@localhost:5432/mock';
@@ -118,9 +119,28 @@ describe('Phase 3 Platform Kernel (integration)', () => {
       .compile();
 
     phase3App = moduleRef.createNestApplication();
-    // RED: intentionally incomplete — helmet, CORS, Swagger added in GREEN pass.
+    // Security middleware order mirrors main.ts (T-03-07/T-03-08/INFRA-12).
+    phase3App.use(helmet());
+    phase3App.enableCors({
+      origin: ['http://localhost:3001'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      credentials: true,
+    });
     phase3App.setGlobalPrefix('api');
     phase3App.enableVersioning({ type: VersioningType.URI });
+
+    // Swagger must be set up BEFORE app.init() so Express registers the routes
+    // before the HTTP adapter finalizes. Test.createTestingModule does not run
+    // main.ts, so the non-prod gate is not invoked; we wire it here manually.
+    const document = SwaggerModule.createDocument(
+      phase3App,
+      new DocumentBuilder()
+        .setTitle('Enterprise AI Delivery Platform API')
+        .setVersion('1.0')
+        .addBearerAuth()
+        .build(),
+    );
+    SwaggerModule.setup('api/docs', phase3App, document);
     await phase3App.init();
   });
 
@@ -194,13 +214,31 @@ describe('Phase 3 Rate Limiting (INFRA-12)', () => {
   let rateLimitApp: INestApplication;
 
   beforeAll(async () => {
-    // Override limit before .compile() so AppConfigModule reads limit=2 via Zod.
-    // RED: intentionally NOT set — rate limit test will fail until GREEN sets this.
+    // Override AppConfigService directly so the ThrottlerModule factory receives
+    // limit=2 regardless of dynamic-module caching or ESM hoisting order.
+    const mockConfig = {
+      get: (key: string): unknown => {
+        const map: Record<string, unknown> = {
+          THROTTLER_LIMIT: 2,
+          THROTTLER_TTL_SECONDS: 60,
+          CORS_ORIGINS: 'http://localhost:3001',
+          LOG_LEVEL: 'info',
+          NODE_ENV: 'test',
+          PORT: 3000,
+          DATABASE_URL: 'postgresql://mock:mock@localhost:5432/mock',
+        };
+        return map[key];
+      },
+      isProduction: false,
+    };
+
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideModule(PrismaModule)
       .useModule(MockPrismaModule)
+      .overrideProvider(AppConfigService)
+      .useValue(mockConfig)
       .compile();
 
     rateLimitApp = moduleRef.createNestApplication();
@@ -211,8 +249,6 @@ describe('Phase 3 Rate Limiting (INFRA-12)', () => {
 
   afterAll(async () => {
     await rateLimitApp.close();
-    // Remove override so subsequent compilations use Zod default (100).
-    delete process.env['THROTTLER_LIMIT'];
   });
 
   it('Test G (INFRA-12): ThrottlerGuard returns 429 after request limit exceeded', async () => {
