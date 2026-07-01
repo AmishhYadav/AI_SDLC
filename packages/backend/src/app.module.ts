@@ -1,14 +1,22 @@
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import { Module, NestModule, MiddlewareConsumer, ValidationPipe } from '@nestjs/common';
+import { APP_FILTER, APP_PIPE, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { PrismaModule } from '@repo/database';
 import { ClsModule, ClsService } from 'nestjs-cls';
 import { LoggerModule } from 'nestjs-pino';
+import { ThrottlerModule, ThrottlerGuard, seconds } from '@nestjs/throttler';
 import { AppConfigModule } from './config/config.module';
 import { AppConfigService } from './config/app-config.service';
 import { GlobalExceptionFilter } from './common/exceptions/global-exception.filter';
 import { PrismaExceptionFilter } from './common/exceptions/prisma-exception.filter';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { extractCorrelationId } from './common/middleware/extract-correlation-id';
+import { ResponseEnvelopeInterceptor } from './common/interceptors/response-envelope.interceptor';
+import { AuditInterceptor } from './common/interceptors/audit.interceptor';
+import { IAuditContextProvider } from './audit/audit-context-provider.interface';
+import { NoOpAuditContextProvider } from './audit/noop-audit-context-provider';
+import { IdempotencyStore } from './idempotency/idempotency-store.interface';
+import { NoOpIdempotencyStore } from './idempotency/noop-idempotency-store';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -60,6 +68,22 @@ import { extractCorrelationId } from './common/middleware/extract-correlation-id
       }),
     }),
     PrismaModule,
+    ThrottlerModule.forRootAsync({
+      imports: [AppConfigModule],
+      inject: [AppConfigService],
+      useFactory: (config: AppConfigService) => ({
+        // CRITICAL: @nestjs/throttler v6 TTL is in milliseconds.
+        // Use seconds() helper — config stores THROTTLER_TTL_SECONDS in seconds.
+        // { ttl: 60, limit: 100 } would mean a 60ms window (not 60s).
+        throttlers: [
+          {
+            ttl: seconds(config.get('THROTTLER_TTL_SECONDS')),
+            limit: config.get('THROTTLER_LIMIT'),
+          },
+        ],
+      }),
+    }),
+    HealthModule,
   ],
   providers: [
     // ORDER MATTERS: NestJS executes APP_FILTERs in reverse registration order,
@@ -70,6 +94,36 @@ import { extractCorrelationId } from './common/middleware/extract-correlation-id
     // PrismaExceptionFilter runs, silently breaking RESOURCE_CONFLICT / NOT_FOUND codes.
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
     { provide: APP_FILTER, useClass: PrismaExceptionFilter },
+
+    // Global validation pipe: whitelist strips unknown fields, forbidNonWhitelisted returns 400
+    // if unknown fields are present (mass-assignment protection, INFRA-07 / D-07).
+    {
+      provide: APP_PIPE,
+      useValue: new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: { enableImplicitConversion: true },
+      }),
+    },
+
+    // Global rate-limit guard (INFRA-12 / D-15). Default: THROTTLER_LIMIT req per
+    // THROTTLER_TTL_SECONDS window per IP. Overridable per-route via @Throttle().
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+
+    // INTERCEPTOR REGISTRATION ORDER: APP_INTERCEPTOR response-side execution is LIFO
+    // (last-registered runs first on response path). ResponseEnvelopeInterceptor is
+    // registered FIRST so it runs LAST (outermost wrapper). AuditInterceptor is registered
+    // SECOND so it runs FIRST on the response path (sees raw handler output before envelope
+    // wrapping). Do NOT swap these lines.
+    { provide: APP_INTERCEPTOR, useClass: ResponseEnvelopeInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
+
+    // Audit context provider — no-op this phase; Phase 4/6 replaces via module override (D-01).
+    { provide: IAuditContextProvider, useClass: NoOpAuditContextProvider },
+
+    // Idempotency store — in-memory no-op until Redis lands (D-09).
+    { provide: IdempotencyStore, useClass: NoOpIdempotencyStore },
   ],
 })
 export class AppModule implements NestModule {
