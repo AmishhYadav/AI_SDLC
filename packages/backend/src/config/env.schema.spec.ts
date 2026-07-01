@@ -7,11 +7,16 @@ describe('envSchema', () => {
       DATABASE_URL: 'postgresql://x',
       PORT: '3000',
       NODE_ENV: 'test',
+      CORS_ORIGINS: 'http://localhost:3001',
     });
     expect(result).toEqual({
       DATABASE_URL: 'postgresql://x',
       PORT: 3000,
       NODE_ENV: 'test',
+      CORS_ORIGINS: 'http://localhost:3001',
+      LOG_LEVEL: 'info',
+      THROTTLER_TTL_SECONDS: 60,
+      THROTTLER_LIMIT: 100,
     });
   });
 
@@ -19,6 +24,7 @@ describe('envSchema', () => {
     const result = envSchema.parse({
       DATABASE_URL: 'postgresql://x',
       NODE_ENV: 'test',
+      CORS_ORIGINS: 'http://localhost:3001',
     });
     expect(result.PORT).toBe(3000);
   });
@@ -35,6 +41,7 @@ describe('envSchema', () => {
         DATABASE_URL: 'postgresql://x',
         PORT: '0',
         NODE_ENV: 'test',
+        CORS_ORIGINS: 'http://localhost:3001',
       }),
     ).toThrow();
   });
@@ -45,6 +52,7 @@ describe('envSchema', () => {
         DATABASE_URL: 'postgresql://x',
         PORT: 'abc',
         NODE_ENV: 'test',
+        CORS_ORIGINS: 'http://localhost:3001',
       }),
     ).toThrow();
   });
@@ -55,6 +63,7 @@ describe('envSchema', () => {
         DATABASE_URL: '',
         PORT: '3000',
         NODE_ENV: 'test',
+        CORS_ORIGINS: 'http://localhost:3001',
       }),
     ).toThrow();
   });
