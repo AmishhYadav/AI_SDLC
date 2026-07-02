@@ -11,10 +11,10 @@ import { CurrentUser } from './current-user.type';
 @Injectable()
 export class StubTokenValidator extends TokenValidator {
   async validate(rawToken: string): Promise<CurrentUser> {
-    if (!rawToken) {
+    const email = rawToken?.trim() ?? '';
+    if (!email) {
       throw new UnauthorizedException('AUTH.STUB_MISSING_DEV_USER_HEADER');
     }
-    const email = rawToken.trim();
     return {
       entraId: `stub-${email}`,
       email,
