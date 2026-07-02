@@ -17,6 +17,7 @@ describe('envSchema', () => {
       LOG_LEVEL: 'info',
       THROTTLER_TTL_SECONDS: 60,
       THROTTLER_LIMIT: 100,
+      AUTH_MODE: 'stub',
     });
   });
 
@@ -104,5 +105,53 @@ describe('envSchema', () => {
       THROTTLER_TTL_SECONDS: '30',
     });
     expect(result.THROTTLER_TTL_SECONDS).toBe(30);
+  });
+
+  // Test A: AUTH_MODE defaults to 'stub' when not supplied
+  it('Test A: AUTH_MODE defaults to stub when not supplied', () => {
+    const result = envSchema.parse({
+      DATABASE_URL: 'postgresql://x',
+      NODE_ENV: 'test',
+      CORS_ORIGINS: 'http://localhost:3001',
+    });
+    expect(result.AUTH_MODE).toBe('stub');
+  });
+
+  // Test B: AUTH_MODE='entra' without ENTRA_* vars throws ZodError
+  it('Test B: throws ZodError when AUTH_MODE is entra but ENTRA vars are absent', () => {
+    expect(() =>
+      envSchema.parse({
+        DATABASE_URL: 'postgresql://x',
+        NODE_ENV: 'test',
+        CORS_ORIGINS: 'http://localhost:3001',
+        AUTH_MODE: 'entra',
+      }),
+    ).toThrow();
+  });
+
+  // Test C: AUTH_MODE='entra' with all ENTRA_* vars succeeds
+  it('Test C: parses successfully when AUTH_MODE is entra and all ENTRA vars are present', () => {
+    const result = envSchema.parse({
+      DATABASE_URL: 'postgresql://x',
+      NODE_ENV: 'test',
+      CORS_ORIGINS: 'http://localhost:3001',
+      AUTH_MODE: 'entra',
+      ENTRA_TENANT_ID: 'tenant-id',
+      ENTRA_CLIENT_ID: 'client-id',
+      ENTRA_AUDIENCE: 'audience',
+    });
+    expect(result.AUTH_MODE).toBe('entra');
+  });
+
+  // Test D: NODE_ENV='production' + AUTH_MODE='stub' throws ZodError (production-guard)
+  it('Test D: throws ZodError when NODE_ENV is production and AUTH_MODE is stub', () => {
+    expect(() =>
+      envSchema.parse({
+        DATABASE_URL: 'postgresql://x',
+        NODE_ENV: 'production',
+        CORS_ORIGINS: 'http://localhost:3001',
+        AUTH_MODE: 'stub',
+      }),
+    ).toThrow();
   });
 });
