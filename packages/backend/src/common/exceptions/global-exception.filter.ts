@@ -8,7 +8,6 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ClsService } from 'nestjs-cls';
-import { AppConfigService } from '../../config/app-config.service';
 import { PLATFORM_ERROR_CODES, PlatformErrorCode } from './error-codes';
 
 // ORDER: status → platform error code. Unmapped statuses fall back to INTERNAL_ERROR.
@@ -23,10 +22,7 @@ const HTTP_STATUS_TO_ERROR_CODE: Partial<Record<number, PlatformErrorCode>> = {
 @Catch()
 @Injectable()
 export class GlobalExceptionFilter implements ExceptionFilter {
-  constructor(
-    private readonly config: AppConfigService,
-    private readonly cls: ClsService,
-  ) {}
+  constructor(private readonly cls: ClsService) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
@@ -60,10 +56,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message,
       traceId: this.cls.getId() ?? crypto.randomUUID(),
     };
-
-    if (!this.config.isProduction && exception instanceof Error) {
-      body['stack'] = exception.stack;
-    }
 
     response.status(status).json(body);
   }
