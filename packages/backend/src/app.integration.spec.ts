@@ -176,10 +176,12 @@ describe('Phase 3 Platform Kernel (integration)', () => {
   });
 
   it('Test E (INFRA-07): ValidationPipe rejects unknown fields (400) and accepts valid DTOs (201)', async () => {
+    // Phase 4: TestController is not @Public() — AUTH_MODE=stub requires X-Dev-User header.
     // Unknown field 'extra' triggers forbidNonWhitelisted → 400
     const { status: rejectStatus } = await request(phase3App.getHttpServer())
       .post('/api/v1/test/echo')
       .set('Content-Type', 'application/json')
+      .set('x-dev-user', 'test@example.com')
       .send({ name: 'valid', extra: 'unknown' });
     expect(rejectStatus).toBe(400);
 
@@ -187,6 +189,7 @@ describe('Phase 3 Platform Kernel (integration)', () => {
     const { status: acceptStatus } = await request(phase3App.getHttpServer())
       .post('/api/v1/test/echo')
       .set('Content-Type', 'application/json')
+      .set('x-dev-user', 'test@example.com')
       .send({ name: 'valid' });
     expect(acceptStatus).toBe(201);
   });
@@ -262,5 +265,57 @@ describe('Phase 3 Rate Limiting (INFRA-12)', () => {
 
     const third = await request(server).get('/api/v1/health/liveness');
     expect(third.status).toBe(429);
+  });
+});
+
+// ── Phase 4 Authentication Guard (AUTH-01, AUTH-03, AUTH-05) ─────────────────
+// Verifies that JwtAuthGuard correctly:
+//   - Returns 200 for @Public() routes (HealthController) with no auth header
+//   - Returns 401 for protected routes when no token or header is provided
+//   - Returns 200 for stub-authenticated requests (AUTH_MODE=stub + X-Dev-User header)
+// Uses AUTH_MODE=stub (the test default) so no live Entra tenant is required.
+describe('Phase 4 Authentication Guard (integration)', () => {
+  let authApp: INestApplication;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+      controllers: [TestController],
+    })
+      .overrideModule(PrismaModule)
+      .useModule(MockPrismaModule)
+      .compile();
+
+    authApp = moduleRef.createNestApplication();
+    authApp.setGlobalPrefix('api');
+    authApp.enableVersioning({ type: VersioningType.URI });
+    await authApp.init();
+  });
+
+  afterAll(async () => {
+    await authApp.close();
+  });
+
+  it('Test H (AUTH-03): @Public() health endpoint returns 200 with no Authorization header', async () => {
+    const { status } = await request(authApp.getHttpServer())
+      .get('/api/v1/health/liveness');
+    expect(status).toBe(200);
+  });
+
+  it('Test I (AUTH-01): protected endpoint returns 401 when X-Dev-User header is absent (stub mode)', async () => {
+    const { status, body } = await request(authApp.getHttpServer())
+      .post('/api/v1/test/echo')
+      .send({ name: 'test' });
+    expect(status).toBe(401);
+    expect(body.success).toBe(false);
+    expect(body.errorCode).toBe('PLATFORM.UNAUTHORIZED');
+  });
+
+  it('Test J (AUTH-05): stub-authenticated request succeeds with X-Dev-User header (AUTH_MODE=stub)', async () => {
+    const { status } = await request(authApp.getHttpServer())
+      .post('/api/v1/test/echo')
+      .set('x-dev-user', 'dev@example.com')
+      .send({ name: 'test' });
+    expect(status).toBe(201);
   });
 });
