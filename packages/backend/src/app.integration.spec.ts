@@ -417,6 +417,7 @@ describe('Phase 4 Authentication (AUTH-01..AUTH-05)', () => {
   });
 
   it('(F) AUTH-02: no passport-azure-ad import exists in src/auth/ (no library coupling)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { execSync } = require('child_process');
     // Search only production auth source files (exclude *.spec.ts to avoid grepping this file).
     // grep exits 1 (no matches) → execSync throws, confirming AUTH-02.

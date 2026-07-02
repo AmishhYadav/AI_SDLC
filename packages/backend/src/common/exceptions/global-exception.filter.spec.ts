@@ -13,18 +13,13 @@ function makeHost(): any {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function makeConfig(isProduction = false): any {
-  return { isProduction };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function makeCls(id = 'test-trace-id'): any {
   return { getId: vi.fn().mockReturnValue(id) };
 }
 
 describe('GlobalExceptionFilter', () => {
   it('returns error envelope for HttpException', () => {
-    const filter = new GlobalExceptionFilter(makeConfig(), makeCls('test-uuid'));
+    const filter = new GlobalExceptionFilter(makeCls('test-uuid'));
     const host = makeHost();
     filter.catch(new HttpException('Not found', HttpStatus.NOT_FOUND), host);
     const response = host.switchToHttp().getResponse();
@@ -36,7 +31,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('maps HTTP status codes to correct error codes', () => {
-    const filter = new GlobalExceptionFilter(makeConfig(), makeCls());
+    const filter = new GlobalExceptionFilter(makeCls());
     const cases: [number, string][] = [
       [HttpStatus.NOT_FOUND, PLATFORM_ERROR_CODES.NOT_FOUND],
       [HttpStatus.CONFLICT, PLATFORM_ERROR_CODES.RESOURCE_CONFLICT],
@@ -53,7 +48,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('uses INTERNAL_ERROR for unmapped HTTP status codes', () => {
-    const filter = new GlobalExceptionFilter(makeConfig(), makeCls());
+    const filter = new GlobalExceptionFilter(makeCls());
     const host = makeHost();
     filter.catch(new HttpException('Forbidden', HttpStatus.FORBIDDEN), host);
     const response = host.switchToHttp().getResponse();
@@ -62,7 +57,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('uses INTERNAL_ERROR for non-HttpExceptions', () => {
-    const filter = new GlobalExceptionFilter(makeConfig(), makeCls());
+    const filter = new GlobalExceptionFilter(makeCls());
     const host = makeHost();
     filter.catch(new Error('crash'), host);
     const response = host.switchToHttp().getResponse();
@@ -71,7 +66,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('joins array message with semicolons', () => {
-    const filter = new GlobalExceptionFilter(makeConfig(), makeCls());
+    const filter = new GlobalExceptionFilter(makeCls());
     const host = makeHost();
     filter.catch(
       new HttpException({ message: ['name must be a string', 'email is invalid'] }, HttpStatus.BAD_REQUEST),
@@ -82,8 +77,8 @@ describe('GlobalExceptionFilter', () => {
     expect(body.message).toBe('name must be a string; email is invalid');
   });
 
-  it('omits stack in production', () => {
-    const filter = new GlobalExceptionFilter(makeConfig(true), makeCls());
+  it('never exposes stack trace in HTTP responses (WR-06: CLAUDE.md §11)', () => {
+    const filter = new GlobalExceptionFilter(makeCls());
     const host = makeHost();
     filter.catch(new Error('boom'), host);
     const response = host.switchToHttp().getResponse();
@@ -91,17 +86,8 @@ describe('GlobalExceptionFilter', () => {
     expect(body['stack']).toBeUndefined();
   });
 
-  it('includes stack in development', () => {
-    const filter = new GlobalExceptionFilter(makeConfig(false), makeCls());
-    const host = makeHost();
-    filter.catch(new Error('boom'), host);
-    const response = host.switchToHttp().getResponse();
-    const body = response.status.mock.results[0].value.json.mock.calls[0][0];
-    expect(body['stack']).toBeDefined();
-  });
-
   it('reads traceId from CLS (not request object)', () => {
-    const filter = new GlobalExceptionFilter(makeConfig(), makeCls('expected-id'));
+    const filter = new GlobalExceptionFilter(makeCls('expected-id'));
     const host = makeHost();
     filter.catch(new Error('any'), host);
     const response = host.switchToHttp().getResponse();
@@ -110,7 +96,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('sets response status to HttpException status', () => {
-    const filter = new GlobalExceptionFilter(makeConfig(), makeCls());
+    const filter = new GlobalExceptionFilter(makeCls());
     const host = makeHost();
     filter.catch(new HttpException('Not found', HttpStatus.NOT_FOUND), host);
     const response = host.switchToHttp().getResponse();
@@ -118,7 +104,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   it('sets response status to 500 for non-HttpException', () => {
-    const filter = new GlobalExceptionFilter(makeConfig(), makeCls());
+    const filter = new GlobalExceptionFilter(makeCls());
     const host = makeHost();
     filter.catch(new Error('boom'), host);
     const response = host.switchToHttp().getResponse();

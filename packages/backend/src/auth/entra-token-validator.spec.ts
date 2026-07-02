@@ -179,7 +179,8 @@ describe('EntraTokenValidator', () => {
     );
 
     await expect(validator.validate(hs256Token)).rejects.toBeInstanceOf(UnauthorizedException);
-    await expect(validator.validate(hs256Token)).rejects.toThrow('AUTH.TOKEN_INVALID');
+    // HS256 tokens lack a kid header → kid guard (WR-03) fires before signature verification
+    await expect(validator.validate(hs256Token)).rejects.toThrow('AUTH.INVALID_TOKEN_FORMAT');
   });
 
   it('token with wrong audience throws AUTH.TOKEN_INVALID (T-04-04 cross-audience rejection)', async () => {
