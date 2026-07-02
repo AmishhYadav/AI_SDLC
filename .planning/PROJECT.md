@@ -37,6 +37,7 @@ This is the first implementation milestone. Subsequent milestones (via `/gsd:new
 - ✓ Shared `@repo/database` package exposing `PrismaModule` / `PrismaService` (NestJS, global) — existing
 - ✓ NestJS monorepo tooling: Turborepo, ESLint 9 flat config, Prettier, Vitest 4 + SWC, GitHub Actions CI — Phase 01 (2026-06-30)
 - ✓ Platform kernel: NestJS bootstrap (global prefix, URI versioning), typed Zod config, structured error contract (exception filters + correlation-id middleware), full turbo pipeline — Phase 02 (2026-07-01)
+- ✓ RBAC authorization infrastructure: `@RequirePermissions()` decorator, `PermissionResolverService` (single-query, CLS-memoized, soft-delete/expiry-filtered), `PermissionsGuard` registered as global `APP_GUARD` after `JwtAuthGuard`, 403 `AUTHZ.PERMISSION_DENIED` error contract, and a real-DB RBAC integration test wired into CI (non-skippable guard) — Phase 05 (2026-07-02)
 
 ### Active
 
@@ -56,7 +57,7 @@ This is the first implementation milestone. Subsequent milestones (via `/gsd:new
 - [ ] Prisma integration via `@repo/database` with no schema changes
 - [ ] Module scaffolding for all 14 domains (consistent layered structure)
 - [ ] Authentication infrastructure prepared for Microsoft Entra ID (SSO) integration
-- [ ] RBAC authorization infrastructure (roles/permissions enforcement)
+- [x] RBAC authorization infrastructure (roles/permissions enforcement) — Phase 05
 - [ ] Organization foundation (organizations, members)
 - [ ] Project foundation (projects, teams)
 - [ ] Architecture supports long-running workflows, AI orchestration, and microservice extraction without rewrites
@@ -137,4 +138,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-29 after initialization*
+*Last updated: 2026-07-02 after Phase 05 (RBAC Authorization Infrastructure) completion*
