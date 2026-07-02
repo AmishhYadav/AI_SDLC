@@ -161,8 +161,8 @@ Plans:
 Plans:
 **Wave 1** *(no dependencies; run in parallel — disjoint files)*
 
-- [ ] 05-01-PLAN.md — @RequirePermissions decorator, AUTHZ error catalog, and the 403 error-contract fix (RBAC-01, PATTERNS gap 1)
-- [ ] 05-02-PLAN.md — PermissionResolverService: single-query org-agnostic resolution, CLS memoization, fail-closed, Phase-6 seam (RBAC-02)
+- [x] 05-01-PLAN.md — @RequirePermissions decorator, AUTHZ error catalog, and the 403 error-contract fix (RBAC-01, PATTERNS gap 1)
+- [x] 05-02-PLAN.md — PermissionResolverService: single-query org-agnostic resolution, CLS memoization, fail-closed, Phase-6 seam (RBAC-02)
 
 **Wave 2** *(blocked on Wave 1)*
 
@@ -243,7 +243,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Platform Kernel — Bootstrap, Config & Error Contract | 4/4 | Complete   | 2026-06-30 |
 | 3. Platform Kernel — Observability, Validation, Security & Health | 6/6 | Complete   | 2026-07-01 |
 | 4. Authentication (Entra ID) Infrastructure | 3/3 | Complete   | 2026-07-02 |
-| 5. RBAC Authorization Infrastructure | 0/4 | Not started | - |
+| 5. RBAC Authorization Infrastructure | 2/4 | In Progress|  |
 | 6. Tenancy & Organization Foundation | 0/4 | Not started | - |
 | 7. Project Foundation | 0/3 | Not started | - |
 | 8. AI Platform Port & Event/Extraction Seams | 0/3 | Not started | - |
