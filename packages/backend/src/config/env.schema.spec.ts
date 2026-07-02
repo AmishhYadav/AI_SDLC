@@ -17,6 +17,7 @@ describe('envSchema', () => {
       LOG_LEVEL: 'info',
       THROTTLER_TTL_SECONDS: 60,
       THROTTLER_LIMIT: 100,
+      AUTH_MODE: 'stub',
     });
   });
 
