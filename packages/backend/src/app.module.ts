@@ -13,10 +13,12 @@ import { extractCorrelationId } from './common/middleware/extract-correlation-id
 import { ResponseEnvelopeInterceptor } from './common/interceptors/response-envelope.interceptor';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { IAuditContextProvider } from './audit/audit-context-provider.interface';
-import { NoOpAuditContextProvider } from './audit/noop-audit-context-provider';
 import { IdempotencyStore } from './idempotency/idempotency-store.interface';
 import { NoOpIdempotencyStore } from './idempotency/noop-idempotency-store';
 import { HealthModule } from './health/health.module';
+import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { AuthAuditContextProvider } from './auth/auth-audit-context-provider';
 
 @Module({
   imports: [
@@ -84,6 +86,7 @@ import { HealthModule } from './health/health.module';
       }),
     }),
     HealthModule,
+    AuthModule,
   ],
   providers: [
     // ORDER MATTERS: NestJS executes APP_FILTERs in reverse registration order,
@@ -110,6 +113,9 @@ import { HealthModule } from './health/health.module';
     // Global rate-limit guard (INFRA-12 / D-15). Default: THROTTLER_LIMIT req per
     // THROTTLER_TTL_SECONDS window per IP. Overridable per-route via @Throttle().
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // D-09 (Phase 4): JwtAuthGuard is second — ThrottlerGuard runs first to rate-limit all
+    // requests including unauthenticated attempts before auth processing begins.
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
 
     // INTERCEPTOR REGISTRATION ORDER: APP_INTERCEPTOR response-side execution is LIFO
     // (last-registered runs first on response path). ResponseEnvelopeInterceptor is
@@ -119,8 +125,9 @@ import { HealthModule } from './health/health.module';
     { provide: APP_INTERCEPTOR, useClass: ResponseEnvelopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
 
-    // Audit context provider — no-op this phase; Phase 4/6 replaces via module override (D-01).
-    { provide: IAuditContextProvider, useClass: NoOpAuditContextProvider },
+    // Audit context provider — Phase 4 returns userId via CLS; audit writes still skip
+    // until Phase 6 provides organizationId (D-04).
+    { provide: IAuditContextProvider, useClass: AuthAuditContextProvider },
 
     // Idempotency store — in-memory no-op until Redis lands (D-09).
     { provide: IdempotencyStore, useClass: NoOpIdempotencyStore },

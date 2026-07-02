@@ -12,6 +12,8 @@ export default defineConfig({
     env: {
       DATABASE_URL: 'postgresql://mock:mock@localhost:5432/mock',
       CORS_ORIGINS: 'http://localhost:3001',
+      // Phase 4: explicit stub mode — no live Entra tenant required for any test in this suite
+      AUTH_MODE: 'stub',
     },
   },
   plugins: [
