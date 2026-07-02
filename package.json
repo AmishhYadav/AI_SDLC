@@ -30,5 +30,15 @@
     "typescript-eslint": "^8.62.0",
     "unplugin-swc": "^1.5.9",
     "vitest": "^4.1.9"
+  },
+  "dependencies": {
+    "@nestjs/passport": "^11.0.5",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/passport": "^1.0.17",
+    "@types/passport-jwt": "^4.0.1",
+    "jsonwebtoken": "^9.0.3",
+    "jwks-rsa": "^4.1.0",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1"
   }
 }
