@@ -166,7 +166,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 05-03-PLAN.md — PermissionsGuard + AuthorizationModule + global APP_GUARD wiring after JwtAuthGuard (RBAC-01, RBAC-03, RBAC-04)
+- [x] 05-03-PLAN.md — PermissionsGuard + AuthorizationModule + global APP_GUARD wiring after JwtAuthGuard (RBAC-01, RBAC-03, RBAC-04)
 
 **Wave 3** *(blocked on Wave 2)*
 
@@ -243,7 +243,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Platform Kernel — Bootstrap, Config & Error Contract | 4/4 | Complete   | 2026-06-30 |
 | 3. Platform Kernel — Observability, Validation, Security & Health | 6/6 | Complete   | 2026-07-01 |
 | 4. Authentication (Entra ID) Infrastructure | 3/3 | Complete   | 2026-07-02 |
-| 5. RBAC Authorization Infrastructure | 2/4 | In Progress|  |
+| 5. RBAC Authorization Infrastructure | 3/4 | In Progress|  |
 | 6. Tenancy & Organization Foundation | 0/4 | Not started | - |
 | 7. Project Foundation | 0/3 | Not started | - |
 | 8. AI Platform Port & Event/Extraction Seams | 0/3 | Not started | - |
