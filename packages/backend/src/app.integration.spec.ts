@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, VersioningType, Module, Global, Controller, Post, Body } from '@nestjs/common';
+import { INestApplication, VersioningType, Module, Global, Controller, Post, Body, Get } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaService, PrismaModule } from '@repo/database';
 import { IsString } from 'class-validator';
@@ -8,11 +8,16 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AppConfigService } from './config/app-config.service';
+import { Public } from './auth/decorators/public.decorator';
+import { GetCurrentUser } from './auth/decorators/current-user.decorator';
+import type { CurrentUser } from './auth/current-user.type';
 
 // Satisfy Zod validation in AppConfigModule before TestingModule.compile()
 process.env['DATABASE_URL'] = process.env['DATABASE_URL'] ?? 'postgresql://mock:mock@localhost:5432/mock';
 process.env['NODE_ENV'] = process.env['NODE_ENV'] ?? 'test';
 process.env['CORS_ORIGINS'] = process.env['CORS_ORIGINS'] ?? 'http://localhost:3001';
+// Phase 4: AUTH_MODE must be set before any TestingModule compiles so Zod schema parses it
+process.env['AUTH_MODE'] = process.env['AUTH_MODE'] ?? 'stub';
 
 // @Global() is required because the real PrismaModule is @Global() in @repo/database.
 // HealthModule (now imported by AppModule) relies on PrismaService being globally provided.
@@ -39,6 +44,27 @@ class TestController {
   @Post('echo')
   echo(@Body() body: TestDto): TestDto {
     return body;
+  }
+}
+
+// ── Phase 4 integration test helper ───────────────────────────────────────
+// AuthTestController provides controlled routes for testing JwtAuthGuard behaviour:
+// - GET /api/v1/auth-test/public: @Public() bypass (no auth required)
+// - GET /api/v1/auth-test/protected: requires auth; returns resolved CurrentUser via @GetCurrentUser()
+
+@Controller({ path: 'auth-test', version: '1' })
+class AuthTestController {
+  @Get('public')
+  @Public()
+  publicRoute(): { status: string; auth: boolean } {
+    return { status: 'ok', auth: false };
+  }
+
+  @Get('protected')
+  protectedRoute(
+    @GetCurrentUser() user: CurrentUser | null,
+  ): { status: string; user: CurrentUser | null } {
+    return { status: 'ok', user };
   }
 }
 // ────────────────────────────────────────────────────────────────────────────
@@ -317,5 +343,87 @@ describe('Phase 4 Authentication Guard (integration)', () => {
       .set('x-dev-user', 'dev@example.com')
       .send({ name: 'test' });
     expect(status).toBe(201);
+  });
+});
+
+// ── Phase 4 Authentication (AUTH-01..AUTH-05) ─────────────────────────────
+// Comprehensive auth requirement coverage using AuthTestController:
+//   AUTH-01: protected route returns 401 without credentials
+//   AUTH-02: no passport-azure-ad import exists in src/
+//   AUTH-03: @Public() routes bypass guard; health liveness accessible without auth
+//   AUTH-04: @GetCurrentUser() decorator resolves CurrentUser principal correctly
+//   AUTH-05: AUTH_MODE=stub with X-Dev-User header produces correct stub identity
+describe('Phase 4 Authentication (AUTH-01..AUTH-05)', () => {
+  let phase4App: INestApplication;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+      controllers: [AuthTestController],
+    })
+      .overrideModule(PrismaModule)
+      .useModule(MockPrismaModule)
+      .compile();
+
+    phase4App = moduleRef.createNestApplication();
+    phase4App.setGlobalPrefix('api');
+    phase4App.enableVersioning({ type: VersioningType.URI });
+    await phase4App.init();
+  });
+
+  afterAll(async () => {
+    await phase4App.close();
+  });
+
+  it('(A) AUTH-03: @Public() auth-test route returns 200 without Authorization header', async () => {
+    const { status, body } = await request(phase4App.getHttpServer())
+      .get('/api/v1/auth-test/public');
+    expect(status).toBe(200);
+    expect(body.data.status).toBe('ok');
+  });
+
+  it('(B) AUTH-01 + AUTH-03: protected route returns 401 without credentials', async () => {
+    const { status, body } = await request(phase4App.getHttpServer())
+      .get('/api/v1/auth-test/protected');
+    expect(status).toBe(401);
+    expect(body.success).toBe(false);
+    expect(body.errorCode).toBeDefined();
+  });
+
+  it('(C) AUTH-05: X-Dev-User header resolves stub CurrentUser in protected route response', async () => {
+    const { status, body } = await request(phase4App.getHttpServer())
+      .get('/api/v1/auth-test/protected')
+      .set('x-dev-user', 'user@test.com');
+    expect(status).toBe(200);
+    expect(body.data.user.email).toBe('user@test.com');
+    expect(body.data.user.entraId).toBe('stub-user@test.com');
+    expect(body.data.user.tenantId).toBe('stub-tenant');
+  });
+
+  it('(D) AUTH-04: @GetCurrentUser() resolves full CurrentUser interface (entraId, email, tenantId)', async () => {
+    const { body } = await request(phase4App.getHttpServer())
+      .get('/api/v1/auth-test/protected')
+      .set('x-dev-user', 'user@test.com');
+    const user = body.data.user;
+    expect(user).toHaveProperty('entraId');
+    expect(user).toHaveProperty('email');
+    expect(user).toHaveProperty('tenantId');
+  });
+
+  it('(E) AUTH-01 + AUTH-03: GET /api/v1/health/liveness returns 200 without Authorization header', async () => {
+    const { status } = await request(phase4App.getHttpServer())
+      .get('/api/v1/health/liveness');
+    expect(status).toBe(200);
+  });
+
+  it('(F) AUTH-02: no passport-azure-ad import exists in src/auth/ (no library coupling)', () => {
+    const { execSync } = require('child_process');
+    // Search only production auth source files (exclude *.spec.ts to avoid grepping this file).
+    // grep exits 1 (no matches) → execSync throws, confirming AUTH-02.
+    // process.cwd() is packages/backend/ when tests run via npm workspace.
+    const srcPath = `${process.cwd()}/src`;
+    expect(() =>
+      execSync(`grep -r "passport-azure-ad" "${srcPath}" --include="*.ts" --exclude="*.spec.ts"`),
+    ).toThrow();
   });
 });
