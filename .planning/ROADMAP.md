@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Platform Kernel — Bootstrap, Config & Error Contract** - `/api/v1` bootstrap, fail-fast typed config, the global error envelope, and Prisma integration (completed 2026-06-30)
 - [x] **Phase 3: Platform Kernel — Observability, Validation, Security & Health** - Structured logging, validation pipe, interceptors, health, Swagger, security baseline, shared conventions (completed 2026-07-01)
 - [x] **Phase 4: Authentication (Entra ID) Infrastructure** - Swappable JWKS-based token validation, `@Public()`, `CurrentUser`, dev stub validator (completed 2026-07-02)
-- [ ] **Phase 5: RBAC Authorization Infrastructure** - `@RequirePermissions()` + `PermissionsGuard` over the seeded permissions, independent of authN
+- [x] **Phase 5: RBAC Authorization Infrastructure** - `@RequirePermissions()` + `PermissionsGuard` over the seeded permissions, independent of authN (completed 2026-07-02)
 - [ ] **Phase 6: Tenancy & Organization Foundation** - Request-scoped tenant context, organization/member CRUD, isolation tests, enforcement-mechanism ADR
 - [ ] **Phase 7: Project Foundation** - Org-scoped project/team CRUD and the published `OrganizationPort` contract
 - [ ] **Phase 8: AI Platform Port & Event/Extraction Seams** - `AiOrchestrationPort` stub, `DomainEventPublisher`/event base, job/queue port, LLM-import lint ban
@@ -170,7 +170,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 05-04-PLAN.md — Real-DB RBAC integration test (allow/deny/stub-backdoor) + CI Postgres service + schema push/seed (RBAC-02, RBAC-03, RBAC-04, PATTERNS gap 2)
+- [x] 05-04-PLAN.md — Real-DB RBAC integration test (allow/deny/stub-backdoor) + CI Postgres service + schema push/seed (RBAC-02, RBAC-03, RBAC-04, PATTERNS gap 2)
 
 ### Phase 6: Tenancy & Organization Foundation
 
@@ -243,7 +243,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Platform Kernel — Bootstrap, Config & Error Contract | 4/4 | Complete   | 2026-06-30 |
 | 3. Platform Kernel — Observability, Validation, Security & Health | 6/6 | Complete   | 2026-07-01 |
 | 4. Authentication (Entra ID) Infrastructure | 3/3 | Complete   | 2026-07-02 |
-| 5. RBAC Authorization Infrastructure | 3/4 | In Progress|  |
+| 5. RBAC Authorization Infrastructure | 4/4 | Complete   | 2026-07-02 |
 | 6. Tenancy & Organization Foundation | 0/4 | Not started | - |
 | 7. Project Foundation | 0/3 | Not started | - |
 | 8. AI Platform Port & Event/Extraction Seams | 0/3 | Not started | - |
