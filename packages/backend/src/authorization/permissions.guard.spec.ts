@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.type';
+import { IS_PUBLIC_KEY } from '../auth/decorators/public.decorator';
+import { REQUIRE_PERMISSIONS_KEY } from './decorators/require-permissions.decorator';
 import { PermissionsGuard } from './permissions.guard';
 
 // ── Mock dependencies ──────────────────────────────────────────────────────
@@ -21,6 +23,17 @@ function buildMockContext(user?: CurrentUser): {
   return { mockContext, mockRequest };
 }
 
+// ── Helper: set reflector mock to return specific values per key ──────────
+// Using mockImplementation (not mockReturnValueOnce) so tests are immune to
+// queue accumulation when vi.clearAllMocks() doesn't reset the once-queue.
+function setupReflector(isPublic: boolean, requiredCodes: string[] | undefined): void {
+  mockReflector.getAllAndOverride.mockImplementation((key: string) => {
+    if (key === IS_PUBLIC_KEY) return isPublic;
+    if (key === REQUIRE_PERMISSIONS_KEY) return requiredCodes;
+    return undefined;
+  });
+}
+
 describe('PermissionsGuard', () => {
   let guard: PermissionsGuard;
 
@@ -30,10 +43,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('@Public() metadata true → returns true immediately; resolver NOT called (D-05)', async () => {
-    // isPublic = true, requiredCodes = undefined
-    mockReflector.getAllAndOverride
-      .mockReturnValueOnce(true) // IS_PUBLIC_KEY
-      .mockReturnValueOnce(undefined); // REQUIRE_PERMISSIONS_KEY (never reached)
+    setupReflector(true, undefined);
     const { mockContext } = buildMockContext();
 
     const result = await guard.canActivate(mockContext);
@@ -43,9 +53,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('No @RequirePermissions metadata (undefined) → returns true; resolver NOT called (D-05)', async () => {
-    mockReflector.getAllAndOverride
-      .mockReturnValueOnce(false) // IS_PUBLIC_KEY
-      .mockReturnValueOnce(undefined); // REQUIRE_PERMISSIONS_KEY — no decorator
+    setupReflector(false, undefined);
     const { mockContext } = buildMockContext({ entraId: 'id', email: 'u@test.com', tenantId: 't' });
 
     const result = await guard.canActivate(mockContext);
@@ -55,9 +63,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('Empty required codes array → returns true; resolver NOT called (D-05)', async () => {
-    mockReflector.getAllAndOverride
-      .mockReturnValueOnce(false) // IS_PUBLIC_KEY
-      .mockReturnValueOnce([]); // REQUIRE_PERMISSIONS_KEY — empty
+    setupReflector(false, []);
     const { mockContext } = buildMockContext({ entraId: 'id', email: 'u@test.com', tenantId: 't' });
 
     const result = await guard.canActivate(mockContext);
@@ -67,9 +73,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('request.user undefined → throws ForbiddenException; resolver NOT called (fail-closed D-04)', async () => {
-    mockReflector.getAllAndOverride
-      .mockReturnValueOnce(false) // IS_PUBLIC_KEY
-      .mockReturnValueOnce(['projects.read']); // REQUIRE_PERMISSIONS_KEY
+    setupReflector(false, ['projects.read']);
     const { mockContext } = buildMockContext(undefined); // no user
 
     await expect(guard.canActivate(mockContext)).rejects.toBeInstanceOf(ForbiddenException);
@@ -78,9 +82,7 @@ describe('PermissionsGuard', () => {
 
   it('Principal has all required codes → returns true (D-02 AND)', async () => {
     const user: CurrentUser = { entraId: 'id', email: 'u@test.com', tenantId: 't' };
-    mockReflector.getAllAndOverride
-      .mockReturnValueOnce(false) // IS_PUBLIC_KEY
-      .mockReturnValueOnce(['projects.read', 'projects.write']); // REQUIRE_PERMISSIONS_KEY
+    setupReflector(false, ['projects.read', 'projects.write']);
     mockResolver.resolve.mockResolvedValue(new Set(['projects.read', 'projects.write', 'admin.read']));
     const { mockContext } = buildMockContext(user);
 
@@ -92,9 +94,7 @@ describe('PermissionsGuard', () => {
 
   it('Principal missing one of two required codes → throws ForbiddenException with AUTHZ.PERMISSION_DENIED (D-02 AND, D-06 403, D-54)', async () => {
     const user: CurrentUser = { entraId: 'id', email: 'u@test.com', tenantId: 't' };
-    mockReflector.getAllAndOverride
-      .mockReturnValueOnce(false) // IS_PUBLIC_KEY
-      .mockReturnValueOnce(['projects.read', 'projects.write']); // REQUIRE_PERMISSIONS_KEY
+    setupReflector(false, ['projects.read', 'projects.write']);
     mockResolver.resolve.mockResolvedValue(new Set(['projects.read'])); // missing projects.write
     const { mockContext } = buildMockContext(user);
 
@@ -110,9 +110,7 @@ describe('PermissionsGuard', () => {
 
   it('Principal has zero permissions → throws ForbiddenException (fail-closed)', async () => {
     const user: CurrentUser = { entraId: 'id', email: 'u@test.com', tenantId: 't' };
-    mockReflector.getAllAndOverride
-      .mockReturnValueOnce(false) // IS_PUBLIC_KEY
-      .mockReturnValueOnce(['admin.access']); // REQUIRE_PERMISSIONS_KEY
+    setupReflector(false, ['admin.access']);
     mockResolver.resolve.mockResolvedValue(new Set<string>()); // empty
     const { mockContext } = buildMockContext(user);
 
