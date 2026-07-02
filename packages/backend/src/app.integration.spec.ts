@@ -227,11 +227,11 @@ describe('Phase 3 Platform Kernel (integration)', () => {
       .set('Origin', 'http://localhost:3001');
     expect(allowedHeaders['access-control-allow-origin']).toBe('http://localhost:3001');
 
-    // Unlisted origin: access-control-allow-origin header is NOT the evil origin
+    // Unlisted origin: access-control-allow-origin header must be absent (not reflected, not wildcard)
     const { headers: rejectedHeaders } = await request(phase3App.getHttpServer())
       .get('/api/v1/nonexistent')
       .set('Origin', 'http://evil.example.com');
-    expect(rejectedHeaders['access-control-allow-origin']).not.toBe('http://evil.example.com');
+    expect(rejectedHeaders['access-control-allow-origin']).toBeUndefined();
   });
 });
 
