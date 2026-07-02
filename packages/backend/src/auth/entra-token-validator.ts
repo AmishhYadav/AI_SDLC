@@ -35,6 +35,9 @@ export class EntraTokenValidator extends TokenValidator {
     if (!decoded || typeof decoded === 'string') {
       throw new UnauthorizedException('AUTH.INVALID_TOKEN_FORMAT');
     }
+    if (!decoded.header.kid) {
+      throw new UnauthorizedException('AUTH.INVALID_TOKEN_FORMAT');
+    }
 
     // Step 2: fetch the RSA public key for this token's kid from the JWKS endpoint
     let publicKey: string;
@@ -67,6 +70,11 @@ export class EntraTokenValidator extends TokenValidator {
 
     if (!entraId || !email || !tenantId) {
       throw new UnauthorizedException('AUTH.MISSING_REQUIRED_CLAIMS');
+    }
+
+    const expectedTenantId = this.config.get('ENTRA_TENANT_ID');
+    if (tenantId !== expectedTenantId) {
+      throw new UnauthorizedException('AUTH.TOKEN_INVALID');
     }
 
     return {
