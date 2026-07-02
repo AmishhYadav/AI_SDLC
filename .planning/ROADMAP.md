@@ -157,7 +157,20 @@ Plans:
   3. The guard chain executes in the order Authentication → RBAC → Tenancy.
   4. A valid token whose principal lacks the required permission is still denied (authN and authZ are not conflated).
 
-**Plans**: TBD (~2 estimated)
+**Plans**: 4 plans
+Plans:
+**Wave 1** *(no dependencies; run in parallel — disjoint files)*
+
+- [ ] 05-01-PLAN.md — @RequirePermissions decorator, AUTHZ error catalog, and the 403 error-contract fix (RBAC-01, PATTERNS gap 1)
+- [ ] 05-02-PLAN.md — PermissionResolverService: single-query org-agnostic resolution, CLS memoization, fail-closed, Phase-6 seam (RBAC-02)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 05-03-PLAN.md — PermissionsGuard + AuthorizationModule + global APP_GUARD wiring after JwtAuthGuard (RBAC-01, RBAC-03, RBAC-04)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 05-04-PLAN.md — Real-DB RBAC integration test (allow/deny/stub-backdoor) + CI Postgres service + schema push/seed (RBAC-02, RBAC-03, RBAC-04, PATTERNS gap 2)
 
 ### Phase 6: Tenancy & Organization Foundation
 
@@ -230,7 +243,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Platform Kernel — Bootstrap, Config & Error Contract | 4/4 | Complete   | 2026-06-30 |
 | 3. Platform Kernel — Observability, Validation, Security & Health | 6/6 | Complete   | 2026-07-01 |
 | 4. Authentication (Entra ID) Infrastructure | 3/3 | Complete   | 2026-07-02 |
-| 5. RBAC Authorization Infrastructure | 0/2 | Not started | - |
+| 5. RBAC Authorization Infrastructure | 0/4 | Not started | - |
 | 6. Tenancy & Organization Foundation | 0/4 | Not started | - |
 | 7. Project Foundation | 0/3 | Not started | - |
 | 8. AI Platform Port & Event/Extraction Seams | 0/3 | Not started | - |
