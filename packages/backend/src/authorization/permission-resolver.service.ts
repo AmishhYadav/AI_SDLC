@@ -40,8 +40,12 @@ export class PermissionResolverService {
    *   Phase 6 will filter `userRoles` by `organizationId` once tenant context exists.
    */
   async resolve(email: string, organizationId?: string): Promise<Set<string>> {
-    // D-08: short-circuit on CLS-memoized Set — no second query within the same request
-    const cached = this.cls.get<Set<string>>(PERMISSIONS_CLS_KEY);
+    // D-08: short-circuit on CLS-memoized Set — no second query within the same request.
+    // The memo key incorporates the resolution inputs (email + organizationId) so distinct
+    // principals or organizations resolved within one request never read each other's cached
+    // Set. A single global key would leak the first caller's permissions to later callers.
+    const cacheKey = `${PERMISSIONS_CLS_KEY}:${email}:${organizationId ?? ''}`;
+    const cached = this.cls.get<Set<string>>(cacheKey);
     if (cached !== undefined) {
       return cached;
     }
@@ -101,7 +105,7 @@ export class PermissionResolverService {
     );
 
     // D-08: memoize for the duration of this request — no cross-request cache
-    this.cls.set(PERMISSIONS_CLS_KEY, resolved);
+    this.cls.set(cacheKey, resolved);
 
     return resolved;
 

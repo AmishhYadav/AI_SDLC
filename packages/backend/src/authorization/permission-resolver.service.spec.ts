@@ -41,7 +41,7 @@ describe('PermissionResolverService', () => {
     expect(result).toBeInstanceOf(Set);
     expect(result.has('organization:read')).toBe(true);
     expect(result.has('project:manage')).toBe(true);
-    expect(mockCls.set).toHaveBeenCalledWith(PERMISSIONS_CLS_KEY, result);
+    expect(mockCls.set).toHaveBeenCalledWith(`${PERMISSIONS_CLS_KEY}:dev@example.com:`, result);
   });
 
   // ── (b) Fail-closed: unknown user ────────────────────────────────────────
@@ -55,7 +55,7 @@ describe('PermissionResolverService', () => {
     expect(result.size).toBe(0);
     expect(mockPrisma.user.findFirst).toHaveBeenCalledTimes(1);
     // cls.set must still be called with the empty Set to memoize the fail-closed result
-    expect(mockCls.set).toHaveBeenCalledWith(PERMISSIONS_CLS_KEY, result);
+    expect(mockCls.set).toHaveBeenCalledWith(`${PERMISSIONS_CLS_KEY}:unknown@example.com:`, result);
   });
 
   // ── (c) Empty roles ──────────────────────────────────────────────────────
@@ -135,6 +135,21 @@ describe('PermissionResolverService', () => {
       where: { deletedAt: unknown };
     };
     expect(callArg.where.deletedAt).toBeNull();
+  });
+
+  // ── (g) Memo key scoping (WR-02) ─────────────────────────────────────────
+  it('memo key scoping — cls.get/set are keyed on email + organizationId so distinct principals/orgs cannot collide within one request', async () => {
+    mockCls.get.mockReturnValue(undefined);
+    mockPrisma.user.findFirst.mockResolvedValue({ userRoles: [] });
+
+    await service.resolve('alice@example.com', 'org-1');
+
+    // The memo must be keyed on the resolution inputs, never a single global constant
+    expect(mockCls.get).toHaveBeenCalledWith(`${PERMISSIONS_CLS_KEY}:alice@example.com:org-1`);
+    expect(mockCls.set).toHaveBeenCalledWith(
+      `${PERMISSIONS_CLS_KEY}:alice@example.com:org-1`,
+      expect.any(Set),
+    );
   });
 
   // ── Multi-role union across memberships ──────────────────────────────────
