@@ -139,4 +139,68 @@ describe('EntraTokenValidator', () => {
     // jwt.decode('not-a-jwt') returns null → AUTH.INVALID_TOKEN_FORMAT
     await expect(validator.validate('not-a-jwt')).rejects.toBeInstanceOf(UnauthorizedException);
   });
+
+  it('both preferred_username and email absent throws AUTH.MISSING_REQUIRED_CLAIMS', async () => {
+    // Neither v2.0 upn claim (preferred_username) nor optional email claim present
+    const token = signToken({ preferred_username: undefined, email: undefined });
+
+    await expect(validator.validate(token)).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(validator.validate(token)).rejects.toThrow('AUTH.MISSING_REQUIRED_CLAIMS');
+  });
+
+  it('tampered token (payload modified after signing) throws AUTH.TOKEN_INVALID (T-04-02)', async () => {
+    const token = signToken({});
+    const parts = token.split('.');
+    // Replace payload segment with different base64url-encoded JSON — signature no longer matches
+    const evilPayload = Buffer.from(JSON.stringify({ oid: 'evil-oid', tid: TENANT_ID })).toString(
+      'base64url',
+    );
+    const tamperedToken = `${parts[0]}.${evilPayload}.${parts[2]}`;
+
+    await expect(validator.validate(tamperedToken)).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(validator.validate(tamperedToken)).rejects.toThrow('AUTH.TOKEN_INVALID');
+  });
+
+  it('HS256-signed token (algorithm confusion attack) throws AUTH.TOKEN_INVALID (T-04-02)', async () => {
+    // T-04-02: algorithms:['RS256'] whitelist in jwt.verify rejects HS256 tokens
+    const hs256Token = jwt.sign(
+      {
+        oid: 'test-oid',
+        tid: TENANT_ID,
+        preferred_username: 'user@example.com',
+      },
+      'symmetric-secret-key',
+      {
+        algorithm: 'HS256',
+        issuer: `https://login.microsoftonline.com/${TENANT_ID}/v2.0`,
+        audience: CLIENT_ID,
+        expiresIn: '1h',
+      },
+    );
+
+    await expect(validator.validate(hs256Token)).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(validator.validate(hs256Token)).rejects.toThrow('AUTH.TOKEN_INVALID');
+  });
+
+  it('token with wrong audience throws AUTH.TOKEN_INVALID (T-04-04 cross-audience rejection)', async () => {
+    // T-04-04: jwt.verify audience check rejects tokens issued for a different client
+    const token = jwt.sign(
+      {
+        oid: 'test-oid',
+        tid: TENANT_ID,
+        preferred_username: 'user@example.com',
+      },
+      privateKey,
+      {
+        algorithm: 'RS256',
+        issuer: `https://login.microsoftonline.com/${TENANT_ID}/v2.0`,
+        audience: 'wrong-audience',
+        expiresIn: '1h',
+        keyid: TEST_KID,
+      },
+    );
+
+    await expect(validator.validate(token)).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(validator.validate(token)).rejects.toThrow('AUTH.TOKEN_INVALID');
+  });
 });

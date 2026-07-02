@@ -25,4 +25,14 @@ describe('StubTokenValidator', () => {
     await expect(validator.validate('')).rejects.toBeInstanceOf(UnauthorizedException);
     await expect(validator.validate('')).rejects.toThrow('AUTH.STUB_MISSING_DEV_USER_HEADER');
   });
+
+  it('undefined rawToken (falsy) throws AUTH.STUB_MISSING_DEV_USER_HEADER', async () => {
+    // Guard passes X-Dev-User header value as rawToken; missing header → undefined → falsy check
+    await expect(
+      validator.validate(undefined as unknown as string),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(
+      validator.validate(undefined as unknown as string),
+    ).rejects.toThrow('AUTH.STUB_MISSING_DEV_USER_HEADER');
+  });
 });
