@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Monorepo & Tooling Foundation** - Workspaces, strict TS/ESLint/Prettier/Vitest/Nest tooling, and the urgent `.env` + credential remediation (completed 2026-06-30)
 - [x] **Phase 2: Platform Kernel — Bootstrap, Config & Error Contract** - `/api/v1` bootstrap, fail-fast typed config, the global error envelope, and Prisma integration (completed 2026-06-30)
 - [x] **Phase 3: Platform Kernel — Observability, Validation, Security & Health** - Structured logging, validation pipe, interceptors, health, Swagger, security baseline, shared conventions (completed 2026-07-01)
-- [ ] **Phase 4: Authentication (Entra ID) Infrastructure** - Swappable JWKS-based token validation, `@Public()`, `CurrentUser`, dev stub validator
+- [x] **Phase 4: Authentication (Entra ID) Infrastructure** - Swappable JWKS-based token validation, `@Public()`, `CurrentUser`, dev stub validator (completed 2026-07-02)
 - [ ] **Phase 5: RBAC Authorization Infrastructure** - `@RequirePermissions()` + `PermissionsGuard` over the seeded permissions, independent of authN
 - [ ] **Phase 6: Tenancy & Organization Foundation** - Request-scoped tenant context, organization/member CRUD, isolation tests, enforcement-mechanism ADR
 - [ ] **Phase 7: Project Foundation** - Org-scoped project/team CRUD and the published `OrganizationPort` contract
@@ -141,7 +141,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 04-03-PLAN.md — Unit tests (guard, validators, env schema extension) + integration test suite extension
+- [x] 04-03-PLAN.md — Unit tests (guard, validators, env schema extension) + integration test suite extension
 
 **Research flag (resolved)**: Entra v2.0 JWKS specifics verified at plan time (HIGH confidence). Key finding: `upn` is v1.0-only; v2.0 email mapping is `preferred_username ?? email`. `aud` = client ID GUID. `iss` = `https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0`.
 
@@ -229,7 +229,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Monorepo & Tooling Foundation | 3/3 | Complete   | 2026-06-30 |
 | 2. Platform Kernel — Bootstrap, Config & Error Contract | 4/4 | Complete   | 2026-06-30 |
 | 3. Platform Kernel — Observability, Validation, Security & Health | 6/6 | Complete   | 2026-07-01 |
-| 4. Authentication (Entra ID) Infrastructure | 2/3 | In Progress|  |
+| 4. Authentication (Entra ID) Infrastructure | 3/3 | Complete   | 2026-07-02 |
 | 5. RBAC Authorization Infrastructure | 0/2 | Not started | - |
 | 6. Tenancy & Organization Foundation | 0/4 | Not started | - |
 | 7. Project Foundation | 0/3 | Not started | - |
