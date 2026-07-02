@@ -19,6 +19,8 @@ import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { AuthAuditContextProvider } from './auth/auth-audit-context-provider';
+import { AuthorizationModule } from './authorization/authorization.module';
+import { PermissionsGuard } from './authorization/permissions.guard';
 
 @Module({
   imports: [
@@ -87,6 +89,7 @@ import { AuthAuditContextProvider } from './auth/auth-audit-context-provider';
     }),
     HealthModule,
     AuthModule,
+    AuthorizationModule,
   ],
   providers: [
     // ORDER MATTERS: NestJS executes APP_FILTERs in reverse registration order,
@@ -116,6 +119,9 @@ import { AuthAuditContextProvider } from './auth/auth-audit-context-provider';
     // D-09 (Phase 4): JwtAuthGuard is second — ThrottlerGuard runs first to rate-limit all
     // requests including unauthenticated attempts before auth processing begins.
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // D-05 (Phase 5): PermissionsGuard is third — JwtAuthGuard must run first to populate
+    // request.user; PermissionsGuard then enforces @RequirePermissions codes (RBAC-03).
+    { provide: APP_GUARD, useClass: PermissionsGuard },
 
     // INTERCEPTOR REGISTRATION ORDER: APP_INTERCEPTOR response-side execution is LIFO
     // (last-registered runs first on response path). ResponseEnvelopeInterceptor is
