@@ -108,9 +108,5 @@ export class PermissionResolverService {
     this.cls.set(cacheKey, resolved);
 
     return resolved;
-
-    // Suppress "unused variable" lint error: organizationId is intentionally declared
-    // as the Phase-6 org-narrowing seam (D-01) but not applied this phase.
-    void organizationId;
   }
 }
