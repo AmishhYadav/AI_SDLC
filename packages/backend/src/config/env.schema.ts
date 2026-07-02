@@ -13,7 +13,6 @@ export const envSchema = z
     // Phase 4 additions (D-05): auth mode + Entra ID configuration
     AUTH_MODE: z.enum(['stub', 'entra']).default('stub'),
     ENTRA_TENANT_ID: z.string().min(1, 'ENTRA_TENANT_ID must be non-empty').optional(),
-    ENTRA_CLIENT_ID: z.string().min(1, 'ENTRA_CLIENT_ID must be non-empty').optional(),
     ENTRA_AUDIENCE: z.string().min(1, 'ENTRA_AUDIENCE must be non-empty').optional(),
   })
   .superRefine((data, ctx) => {
@@ -26,11 +25,10 @@ export const envSchema = z
       });
     }
 
-    // Entra guard: AUTH_MODE=entra requires all three ENTRA_* vars
+    // Entra guard: AUTH_MODE=entra requires ENTRA_TENANT_ID and ENTRA_AUDIENCE
     if (data.AUTH_MODE === 'entra') {
-      const required: Array<'ENTRA_TENANT_ID' | 'ENTRA_CLIENT_ID' | 'ENTRA_AUDIENCE'> = [
+      const required: Array<'ENTRA_TENANT_ID' | 'ENTRA_AUDIENCE'> = [
         'ENTRA_TENANT_ID',
-        'ENTRA_CLIENT_ID',
         'ENTRA_AUDIENCE',
       ];
       for (const key of required) {

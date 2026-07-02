@@ -129,15 +129,14 @@ describe('envSchema', () => {
     ).toThrow();
   });
 
-  // Test C: AUTH_MODE='entra' with all ENTRA_* vars succeeds
-  it('Test C: parses successfully when AUTH_MODE is entra and all ENTRA vars are present', () => {
+  // Test C: AUTH_MODE='entra' with required ENTRA_* vars succeeds
+  it('Test C: parses successfully when AUTH_MODE is entra and required ENTRA vars are present', () => {
     const result = envSchema.parse({
       DATABASE_URL: 'postgresql://x',
       NODE_ENV: 'test',
       CORS_ORIGINS: 'http://localhost:3001',
       AUTH_MODE: 'entra',
       ENTRA_TENANT_ID: 'tenant-id',
-      ENTRA_CLIENT_ID: 'client-id',
       ENTRA_AUDIENCE: 'audience',
     });
     expect(result.AUTH_MODE).toBe('entra');
