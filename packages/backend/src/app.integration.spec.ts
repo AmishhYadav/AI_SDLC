@@ -11,6 +11,7 @@ import { AppConfigService } from './config/app-config.service';
 import { Public } from './auth/decorators/public.decorator';
 import { GetCurrentUser } from './auth/decorators/current-user.decorator';
 import type { CurrentUser } from './auth/current-user.type';
+import { RequirePermissions } from './authorization/decorators/require-permissions.decorator';
 
 // Satisfy Zod validation in AppConfigModule before TestingModule.compile()
 process.env['DATABASE_URL'] = process.env['DATABASE_URL'] ?? 'postgresql://mock:mock@localhost:5432/mock';
@@ -18,6 +19,13 @@ process.env['NODE_ENV'] = process.env['NODE_ENV'] ?? 'test';
 process.env['CORS_ORIGINS'] = process.env['CORS_ORIGINS'] ?? 'http://localhost:3001';
 // Phase 4: AUTH_MODE must be set before any TestingModule compiles so Zod schema parses it
 process.env['AUTH_MODE'] = process.env['AUTH_MODE'] ?? 'stub';
+
+// Phase 5 RBAC real-DB detection (evaluated once at module load time).
+// A real DATABASE_URL is any URL that does NOT contain 'mock' — i.e. a real Postgres endpoint.
+const realDbAvailable = !!process.env['DATABASE_URL'] && !process.env['DATABASE_URL'].includes('mock');
+// D-09 silent-skip guard: when set to '1' in CI the non-skippable guard test fails loudly
+// if DATABASE_URL turns out to be mock/absent, preventing a false-green CI run.
+const realDbRequired = process.env['RBAC_REALDB_REQUIRED'] === '1';
 
 // @Global() is required because the real PrismaModule is @Global() in @repo/database.
 // HealthModule (now imported by AppModule) relies on PrismaService being globally provided.
@@ -67,7 +75,37 @@ class AuthTestController {
     return { status: 'ok', user };
   }
 }
+// ── Phase 5 RBAC real-DB test helper ─────────────────────────────────────
+// RbacTestController provides two permission-gated routes for the RBAC real-DB
+// describe block. It is intentionally NOT @Public() — JwtAuthGuard must run first.
+// - GET /api/v1/rbac-test/read:   @RequirePermissions('organization:read')
+// - GET /api/v1/rbac-test/manage: @RequirePermissions('organization:manage')
+
+@Controller({ path: 'rbac-test', version: '1' })
+class RbacTestController {
+  @Get('read')
+  @RequirePermissions('organization:read')
+  readRoute(): { ok: boolean } {
+    return { ok: true };
+  }
+
+  @Get('manage')
+  @RequirePermissions('organization:manage')
+  manageRoute(): { ok: boolean } {
+    return { ok: true };
+  }
+}
 // ────────────────────────────────────────────────────────────────────────────
+
+// D-09 / T-05-16 silent-skip guard — MUST run outside any skippable describe block.
+// When CI sets RBAC_REALDB_REQUIRED=1 but DATABASE_URL is mock or missing (env
+// mis-wired), this test FAILS loudly, making CI red instead of leaving the whole
+// real-DB RBAC proof silently skipping to green.
+// Locally (no RBAC_REALDB_REQUIRED flag and no real DB), realDbRequired is false
+// so this guard passes trivially and the real-DB block below skips as expected.
+it('real-DB RBAC block must actually execute when RBAC_REALDB_REQUIRED is set', () => {
+  if (realDbRequired) expect(realDbAvailable).toBe(true);
+});
 
 describe('App bootstrap (integration)', () => {
   let app: INestApplication;
@@ -426,5 +464,117 @@ describe('Phase 4 Authentication (AUTH-01..AUTH-05)', () => {
     expect(() =>
       execSync(`grep -r "passport-azure-ad" "${srcPath}" --include="*.ts" --exclude="*.spec.ts"`),
     ).toThrow();
+  });
+});
+
+// ── Phase 5 RBAC Authorization (RBAC-02..RBAC-04) ────────────────────────
+// Proves the complete RBAC path end-to-end against a real Postgres database.
+// Skipped on local mock-only runs (realDbAvailable=false). Runs in CI where a
+// real DATABASE_URL is present, and the non-skippable guard above turns any
+// env mis-wiring into a red build (D-09, T-05-16).
+//
+// This describe block does NOT call .overrideModule(PrismaModule).useModule(MockPrismaModule).
+// It uses the real PrismaModule so the PermissionResolverService query hits Postgres.
+describe.skipIf(!realDbAvailable)('RBAC Authorization (real DB) (RBAC-02..RBAC-04)', () => {
+  let rbacApp: INestApplication;
+  let prisma: PrismaService;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+      controllers: [RbacTestController],
+      // Intentionally NO .overrideModule(PrismaModule).useModule(MockPrismaModule) here.
+      // The real PrismaModule connects to the Postgres service provisioned by CI.
+    }).compile();
+
+    rbacApp = moduleRef.createNestApplication();
+    rbacApp.setGlobalPrefix('api');
+    rbacApp.enableVersioning({ type: VersioningType.URI });
+    await rbacApp.init();
+
+    prisma = rbacApp.get(PrismaService);
+
+    // Pre-cleanup: remove any leftover fixtures from a previous failed run to ensure idempotency.
+    const leftoverUser = await prisma.user.findUnique({ where: { email: 'rbac-allow@test.com' } });
+    if (leftoverUser) {
+      await prisma.userRole.deleteMany({ where: { userId: leftoverUser.id } });
+      await prisma.organizationMember.deleteMany({ where: { userId: leftoverUser.id } });
+      await prisma.user.delete({ where: { id: leftoverUser.id } });
+    }
+
+    // Look up the seeded reference data (read-only — never mutated by this test).
+    const systemOrg = await prisma.organization.findUniqueOrThrow({ where: { slug: 'system' } });
+    const developerRole = await prisma.role.findFirstOrThrow({
+      where: { organizationId: systemOrg.id, name: 'Developer', deletedAt: null },
+    });
+
+    // Create fixtures for rbac-allow@test.com: User → OrganizationMember → UserRole (Developer).
+    // The Developer role holds 'organization:read' but NOT 'organization:manage' (seed.ts).
+    const fixtureUser = await prisma.user.create({
+      data: { email: 'rbac-allow@test.com', firstName: 'RBAC', status: 'ACTIVE' },
+    });
+    const fixtureMember = await prisma.organizationMember.create({
+      data: {
+        organizationId: systemOrg.id,
+        userId: fixtureUser.id,
+        status: 'ACTIVE',
+        joinedAt: new Date(),
+      },
+    });
+    await prisma.userRole.create({
+      data: {
+        userId: fixtureUser.id,
+        roleId: developerRole.id,
+        organizationMemberId: fixtureMember.id,
+      },
+    });
+    // rbac-none@test.com deliberately has NO User or UserRole row.
+    // PermissionResolverService returns an empty Set (D-04 fail-closed), so all routes deny 403.
+  });
+
+  afterAll(async () => {
+    // Clean up ONLY the fixture rows. Never touch seeded permissions, roles, or the organization.
+    const fixtureUser = await prisma.user.findUnique({ where: { email: 'rbac-allow@test.com' } });
+    if (fixtureUser) {
+      await prisma.userRole.deleteMany({ where: { userId: fixtureUser.id } });
+      await prisma.organizationMember.deleteMany({ where: { userId: fixtureUser.id } });
+      await prisma.user.delete({ where: { id: fixtureUser.id } });
+    }
+    await rbacApp.close();
+  });
+
+  it('(a) allow: Developer role holding organization:read returns 200 on the read route (RBAC-02)', async () => {
+    const { status } = await request(rbacApp.getHttpServer())
+      .get('/api/v1/rbac-test/read')
+      .set('x-dev-user', 'rbac-allow@test.com');
+    expect(status).toBe(200);
+  });
+
+  it('(b) deny: lacking organization:manage returns 403 AUTHZ.PERMISSION_DENIED without leaking the missing code (RBAC-04, D-54)', async () => {
+    const { status, body } = await request(rbacApp.getHttpServer())
+      .get('/api/v1/rbac-test/manage')
+      .set('x-dev-user', 'rbac-allow@test.com');
+    expect(status).toBe(403);
+    expect(body.success).toBe(false);
+    expect(body.errorCode).toBe('AUTHZ.PERMISSION_DENIED');
+    // D-54: the response message must never include the missing permission code
+    expect(body.message).not.toContain('organization:manage');
+  });
+
+  it('(c) stub-no-permissions: authenticated stub principal with no seeded UserRole returns 403 — no backdoor (D-09)', async () => {
+    // rbac-none@test.com is unknown to the DB; PermissionResolverService returns empty Set (D-04).
+    // Proves AUTH_MODE=stub authenticates but never grants permissions.
+    const { status } = await request(rbacApp.getHttpServer())
+      .get('/api/v1/rbac-test/read')
+      .set('x-dev-user', 'rbac-none@test.com');
+    expect(status).toBe(403);
+  });
+
+  it('(d) chain: missing x-dev-user header returns 401 — JwtAuthGuard runs before PermissionsGuard (RBAC-03)', async () => {
+    // No authentication header → JwtAuthGuard returns 401 before PermissionsGuard even runs.
+    // Distinguishes authN failure (401) from authZ failure (403) per RBAC-03/RBAC-04.
+    const { status } = await request(rbacApp.getHttpServer())
+      .get('/api/v1/rbac-test/read');
+    expect(status).toBe(401);
   });
 });
