@@ -802,22 +802,22 @@ const testToken = jwt.sign(
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`email` claim vs `preferred_username` in practice**
    - What we know: `upn` is v1.0-only; `preferred_username` is present in v2.0 tokens with `profile` scope; `email` requires optional claim configuration.
    - What's unclear: Does the enterprise Entra tenant in use request `profile` scope by default? Are there guest accounts or service principals that might lack both claims?
-   - Recommendation: Implement `preferred_username ?? email` with a fail-fast `UnauthorizedException` if both are absent. Document the optional `email` claim configuration requirement in the deployment guide.
+   - **RESOLVED:** Implement `preferred_username ?? email` with a fail-fast `UnauthorizedException` (`AUTH.MISSING_REQUIRED_CLAIMS`) if both are absent. Document the optional `email` claim configuration requirement in the deployment guide. (Implemented in Plans 04-01-T3, 04-02-T1.)
 
 2. **`ENTRA_AUDIENCE` value format for this specific app registration**
    - What we know: v2.0 access tokens use client ID GUID as `aud`. The `App ID URI` (`api://`) is only used in v1.0.
    - What's unclear: Some app registrations expose both formats. The correct value depends on what `requestedAccessTokenVersion` is set to in the API's app manifest.
-   - Recommendation: Set `ENTRA_AUDIENCE` env var to the client ID GUID. Verify by decoding a real token from the tenant.
+   - **RESOLVED:** Set `ENTRA_AUDIENCE` env var to the client ID GUID (not the `api://` App ID URI). Verify by decoding a real token from the tenant. (Implemented in Plans 04-01-T2 env schema, 04-02-T1 `jwt.verify` audience option.)
 
 3. **`AuthAuditContextProvider` design — CLS vs request**
    - What we know: `IAuditContextProvider.getContext()` is called by `AuditInterceptor` which runs after the guard.
    - What's unclear: Is it simpler to read `request.user` via `HttpContextHost` or to store in CLS?
-   - Recommendation: Store `CurrentUser` in CLS (nestjs-cls `cls.set('user', currentUser)`) from the guard. `AuthAuditContextProvider` reads it from CLS. This keeps the provider transport-agnostic (no HTTP dependency).
+   - **RESOLVED:** Store `CurrentUser` in CLS (nestjs-cls `cls.set('user', currentUser)`) from the guard. `AuthAuditContextProvider` reads it from CLS. This keeps the provider transport-agnostic (no HTTP dependency). (Implemented in Plan 04-02-T2.)
 
 ---
 
