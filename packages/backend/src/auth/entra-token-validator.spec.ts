@@ -3,8 +3,7 @@ import { generateKeyPairSync } from 'crypto';
 import * as jwt from 'jsonwebtoken';
 import { UnauthorizedException } from '@nestjs/common';
 
-// Generate a real RSA keypair once for all tests. Using PEM strings for compatibility
-// with both jwt.sign() and the mock for jwks-rsa getPublicKey().
+// Generate a real RSA keypair once for all tests — PEM strings for full jwt.verify compatibility
 const { privateKey, publicKey } = generateKeyPairSync('rsa', {
   modulusLength: 2048,
   publicKeyEncoding: { type: 'spki', format: 'pem' },
@@ -15,17 +14,22 @@ const TEST_KID = 'test-kid-1';
 const TENANT_ID = 'test-tenant-id';
 const CLIENT_ID = 'test-client-id';
 
-// vi.hoisted runs before vi.mock factories, so mockGetSigningKey is available in the
-// factory closure even though vi.mock() calls are hoisted to the top of the module.
-const { mockGetSigningKey } = vi.hoisted(() => {
-  const mockGetSigningKey = vi.fn();
-  return { mockGetSigningKey };
-});
+// vi.hoisted: create mock functions in the hoisted execution context so they are available
+// in the vi.mock factory below. vi.fn() does NOT work inside vi.mock factories directly.
+const { mockGetSigningKey } = vi.hoisted(() => ({
+  mockGetSigningKey: vi.fn(),
+}));
 
+// vi.mock factory can reference the hoisted mockGetSigningKey because vi.hoisted runs first.
+// The JwksClient mock is a plain class (not vi.fn) — the constructor just wires getSigningKey.
 vi.mock('jwks-rsa', () => ({
-  JwksClient: vi.fn().mockImplementation(() => ({
-    getSigningKey: mockGetSigningKey,
-  })),
+  JwksClient: class {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getSigningKey: any;
+    constructor() {
+      this.getSigningKey = mockGetSigningKey;
+    }
+  },
 }));
 
 // Import subject AFTER mocks are registered so jwks-rsa is intercepted on load.
@@ -44,6 +48,7 @@ const mockConfig = {
 /**
  * Signs a test RS256 token using the local private key.
  * Default claims include all required fields; individual tests override specific ones.
+ * Passing undefined for a claim key causes JSON.stringify to omit it from the JWT payload.
  */
 function signToken(
   claims: Record<string, unknown>,
@@ -55,7 +60,6 @@ function signToken(
     preferred_username: 'user@example.com',
     name: 'Test User',
   };
-  // Merge: overriding with undefined removes the key from JWT payload (JSON.stringify omits undefined)
   const mergedClaims = Object.fromEntries(
     Object.entries({ ...baseClaims, ...claims }).filter(([, v]) => v !== undefined),
   );
@@ -75,7 +79,7 @@ describe('EntraTokenValidator', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default: getSigningKey returns the test public key keyed by TEST_KID
+    // Default: getSigningKey resolves with the test public key
     mockGetSigningKey.mockResolvedValue({ getPublicKey: () => publicKey });
     validator = new EntraTokenValidator(mockConfig as never);
   });
@@ -105,7 +109,7 @@ describe('EntraTokenValidator', () => {
   });
 
   it('expired token throws AUTH.TOKEN_INVALID', async () => {
-    // Set exp 1 hour in the past — jwt.verify() raises TokenExpiredError
+    // Set exp 1 hour in the past; jwt.verify() raises TokenExpiredError which is caught → TOKEN_INVALID
     const expiredClaims = {
       oid: 'test-oid',
       tid: TENANT_ID,
@@ -132,7 +136,7 @@ describe('EntraTokenValidator', () => {
   });
 
   it('completely invalid (non-JWT) string throws UnauthorizedException', async () => {
-    // jwt.decode('not-a-jwt') returns null — caught as AUTH.INVALID_TOKEN_FORMAT
+    // jwt.decode('not-a-jwt') returns null → AUTH.INVALID_TOKEN_FORMAT
     await expect(validator.validate('not-a-jwt')).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });
