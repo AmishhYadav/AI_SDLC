@@ -14,6 +14,35 @@ permissions:
 jobs:
   ci:
     runs-on: ubuntu-latest
+
+    # Phase 5 (Plan 04): Postgres service for RBAC real-DB integration tests (RBAC-02..RBAC-04).
+    # The health-check options block makes the runner wait until Postgres is accepting connections
+    # before any step runs, so the db-push and seed steps cannot race with service startup.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    # Job-level env: DATABASE_URL is consumed by both Prisma CLI steps (push/seed) and the
+    # vitest process (via vitest.config.ts process.env passthrough added in Plan 04 Task 1).
+    # RBAC_REALDB_REQUIRED=1 activates the non-skippable silent-skip guard in
+    # app.integration.spec.ts: if DATABASE_URL is mock or absent at test-collection time,
+    # that guard test FAILS and CI turns red instead of the real-DB RBAC block silently
+    # skipping to green (D-09, T-05-16).
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      RBAC_REALDB_REQUIRED: '1'
+
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
@@ -28,6 +57,17 @@ jobs:
 
       - name: Format check
         run: npm run format:check
+
+      # Apply schema to the fresh CI Postgres (--skip-generate: prisma generate already ran
+      # via the @repo/database postinstall hook during npm ci above).
+      - name: Apply database schema
+        run: npx prisma db push --schema packages/database/prisma/schema --skip-generate
+
+      # Seed the 16 permissions, 4 roles, and System Organization so the RBAC real-DB
+      # tests can resolve the seeded Developer role against the fixtures they create.
+      - name: Seed database
+        working-directory: packages/database
+        run: npx prisma db seed
 
       - name: Lint, typecheck, test, build
         run: npx turbo run lint typecheck test build
