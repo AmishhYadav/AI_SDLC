@@ -47,13 +47,29 @@ describe('GlobalExceptionFilter', () => {
     }
   });
 
-  it('uses INTERNAL_ERROR for unmapped HTTP status codes', () => {
+  it('maps FORBIDDEN status to PLATFORM.FORBIDDEN (not INTERNAL_ERROR)', () => {
     const filter = new GlobalExceptionFilter(makeCls());
     const host = makeHost();
     filter.catch(new HttpException('Forbidden', HttpStatus.FORBIDDEN), host);
     const response = host.switchToHttp().getResponse();
     const body = response.status.mock.results[0].value.json.mock.calls[0][0];
-    expect(body.errorCode).toBe(PLATFORM_ERROR_CODES.INTERNAL_ERROR);
+    expect(body.errorCode).toBe(PLATFORM_ERROR_CODES.FORBIDDEN);
+    expect(body.errorCode).not.toBe(PLATFORM_ERROR_CODES.INTERNAL_ERROR);
+  });
+
+  it('surfaces explicit errorCode from HttpException response object', () => {
+    const filter = new GlobalExceptionFilter(makeCls());
+    const host = makeHost();
+    filter.catch(
+      new HttpException(
+        { errorCode: 'AUTHZ.PERMISSION_DENIED', message: 'You do not have permission to perform this action' },
+        HttpStatus.FORBIDDEN,
+      ),
+      host,
+    );
+    const response = host.switchToHttp().getResponse();
+    const body = response.status.mock.results[0].value.json.mock.calls[0][0];
+    expect(body.errorCode).toBe('AUTHZ.PERMISSION_DENIED');
   });
 
   it('uses INTERNAL_ERROR for non-HttpExceptions', () => {

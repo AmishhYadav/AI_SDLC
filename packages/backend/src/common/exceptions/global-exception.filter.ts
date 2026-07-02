@@ -13,6 +13,7 @@ import { PLATFORM_ERROR_CODES, PlatformErrorCode } from './error-codes';
 // ORDER: status → platform error code. Unmapped statuses fall back to INTERNAL_ERROR.
 const HTTP_STATUS_TO_ERROR_CODE: Partial<Record<number, PlatformErrorCode>> = {
   [HttpStatus.UNAUTHORIZED]: PLATFORM_ERROR_CODES.UNAUTHORIZED,
+  [HttpStatus.FORBIDDEN]: PLATFORM_ERROR_CODES.FORBIDDEN,
   [HttpStatus.NOT_FOUND]: PLATFORM_ERROR_CODES.NOT_FOUND,
   [HttpStatus.CONFLICT]: PLATFORM_ERROR_CODES.RESOURCE_CONFLICT,
   [HttpStatus.BAD_REQUEST]: PLATFORM_ERROR_CODES.VALIDATION_ERROR,
@@ -45,8 +46,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           ? exception.message
           : 'An unexpected error occurred';
 
+    const explicitErrorCode =
+      isHttp &&
+      typeof rawResponse === 'object' &&
+      rawResponse !== null &&
+      'errorCode' in rawResponse &&
+      typeof (rawResponse as Record<string, unknown>)['errorCode'] === 'string'
+        ? (rawResponse as Record<string, unknown>)['errorCode']
+        : undefined;
+
     const errorCode = isHttp
-      ? (HTTP_STATUS_TO_ERROR_CODE[status] ?? PLATFORM_ERROR_CODES.INTERNAL_ERROR)
+      ? ((explicitErrorCode as string | undefined) ??
+          HTTP_STATUS_TO_ERROR_CODE[status] ??
+          PLATFORM_ERROR_CODES.INTERNAL_ERROR)
       : PLATFORM_ERROR_CODES.INTERNAL_ERROR;
 
     const body: Record<string, unknown> = {
