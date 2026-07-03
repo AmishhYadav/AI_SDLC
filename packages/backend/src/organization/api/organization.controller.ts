@@ -7,6 +7,8 @@ import { OrganizationService } from '../application/organization.service';
 import { MemberService } from '../application/member.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { AddMemberDto } from './dto/add-member.dto';
+import { OrganizationResponseDto } from './dto/organization-response.dto';
+import { MemberResponseDto } from './dto/member-response.dto';
 
 /**
  * REST API for Organization and OrganizationMember operations.
@@ -30,35 +32,43 @@ export class OrganizationController {
 
   @Post('/')
   @NoTenantScope()
-  createOrganization(
+  async createOrganization(
     @Body() dto: CreateOrganizationDto,
     @GetCurrentUser() user: CurrentUser,
-  ) {
-    return this.organizationService.createOrganization(user.email, dto);
+  ): Promise<OrganizationResponseDto> {
+    const org = await this.organizationService.createOrganization(user.email, dto);
+    return OrganizationResponseDto.from(org);
   }
 
   @Get('/mine')
   @NoTenantScope()
-  listMyOrgs(@GetCurrentUser() user: CurrentUser) {
-    return this.organizationService.listMyOrgs(user.email);
+  async listMyOrgs(@GetCurrentUser() user: CurrentUser): Promise<OrganizationResponseDto[]> {
+    const orgs = await this.organizationService.listMyOrgs(user.email);
+    return orgs.map(OrganizationResponseDto.from);
   }
 
   @Get('/:id')
   @RequirePermissions('organization:read')
-  getOrganization(@Param('id') id: string) {
-    return this.organizationService.findById(id);
+  async getOrganization(@Param('id') id: string): Promise<OrganizationResponseDto> {
+    const org = await this.organizationService.findById(id);
+    return OrganizationResponseDto.from(org);
   }
 
   @Post('/:id/members')
   @RequirePermissions('organization:manage')
-  addMember(@Param('id') _id: string, @Body() dto: AddMemberDto) {
-    return this.memberService.addMember(dto.email);
+  async addMember(
+    @Param('id') _id: string,
+    @Body() dto: AddMemberDto,
+  ): Promise<MemberResponseDto> {
+    const member = await this.memberService.addMember(dto.email);
+    return MemberResponseDto.from(member);
   }
 
   @Get('/:id/members')
   @RequirePermissions('organization:read')
-  listMembers(@Param('id') _id: string) {
-    return this.memberService.listMembers();
+  async listMembers(@Param('id') _id: string): Promise<MemberResponseDto[]> {
+    const members = await this.memberService.listMembers();
+    return members.map(MemberResponseDto.from);
   }
 
   @Delete('/:id/members/:memberId')
