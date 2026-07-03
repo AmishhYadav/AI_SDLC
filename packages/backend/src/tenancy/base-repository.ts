@@ -12,6 +12,14 @@ import { TenantedPrismaService } from './tenanted-prisma.service';
  * `findUnique`) for org-scoped lookups. Injecting `organizationId` into a
  * `findUnique.where` violates Prisma's unique-constraint type requirements.
  *
+ * ⚠️ NESTED READS ARE NOT SCOPED (WR-06): the $extends query hook only rewrites
+ * the `where` of the TOP-LEVEL operation. Prisma does NOT invoke the extension
+ * for relations loaded via `include`/`select`, so nested rows of another scoped
+ * model bypass the organizationId/deletedAt filter and leak across tenants.
+ * Subclasses MUST NOT `include`/`select` a scoped relation through the scoped
+ * client. Load related scoped data with a separate top-level scoped query, or
+ * write the nested `organizationId` filter explicitly.
+ *
  * For re-add upsert operations, use raw PrismaService injected separately —
  * the extension's where injection conflicts with upsert's unique-key argument
  * (RESEARCH A3).
