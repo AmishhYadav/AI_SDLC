@@ -4,7 +4,7 @@ export class CreateOrganizationDto {
   @IsString()
   @MinLength(2)
   @MaxLength(100)
-  name: string;
+  name!: string;
 
   @IsString()
   @Matches(/^[a-z0-9-]+$/, {
@@ -12,5 +12,5 @@ export class CreateOrganizationDto {
   })
   @MinLength(2)
   @MaxLength(60)
-  slug: string;
+  slug!: string;
 }

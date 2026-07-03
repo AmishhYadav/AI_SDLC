@@ -64,7 +64,7 @@ describe('OrganizationService', () => {
         data: expect.objectContaining({ userId: 'user-1', status: 'ACTIVE' }),
       }),
     );
-    expect(mockTx.organizationMember.create.mock.calls[0][0].data.joinedAt).toBeInstanceOf(Date);
+    expect(mockTx.organizationMember.create.mock.calls[0]![0].data.joinedAt).toBeInstanceOf(Date);
   });
 
   // ── Test 3: findById — IDOR guard (T-06-12) ────────────────────────────────

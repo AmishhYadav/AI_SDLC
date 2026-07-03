@@ -133,7 +133,7 @@ describe('TenantGuard', () => {
     // cls.set must use only the first array element as organizationId
     expect(mockCls.set).toHaveBeenCalledWith('organizationId', 'org-1');
     // prisma lookup must also use first element only
-    const callArgs = mockPrisma.organizationMember.findFirst.mock.calls[0][0] as {
+    const callArgs = mockPrisma.organizationMember.findFirst.mock.calls[0]![0] as {
       where: { organizationId: string };
     };
     expect(callArgs.where.organizationId).toBe('org-1');
