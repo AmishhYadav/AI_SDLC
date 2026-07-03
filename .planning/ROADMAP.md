@@ -194,8 +194,8 @@ Plans:
 
 **Wave 2** *(blocks on Wave 1; plans 02 and 03 run in parallel — disjoint files)*
 
-- [ ] 06-02-PLAN.md — TenantGuard (APP_GUARD after PermissionsGuard), TenancyModule, D-16 AuthAuditContextProvider wiring, guard unit tests (TENANT-01, TENANT-02)
-- [ ] 06-03-PLAN.md — Organization data layer: DTOs, OrganizationRepository (raw), MemberRepository (extends BaseRepository), OrganizationService, MemberService, MemberService unit tests (TENANT-03, TENANT-04, TENANT-05)
+- [x] 06-02-PLAN.md — TenantGuard (APP_GUARD after PermissionsGuard), TenancyModule, D-16 AuthAuditContextProvider wiring, guard unit tests (TENANT-01, TENANT-02)
+- [x] 06-03-PLAN.md — Organization data layer: DTOs, OrganizationRepository (raw), MemberRepository (extends BaseRepository), OrganizationService, MemberService, MemberService unit tests (TENANT-03, TENANT-04, TENANT-05)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -257,7 +257,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Platform Kernel — Observability, Validation, Security & Health | 6/6 | Complete   | 2026-07-01 |
 | 4. Authentication (Entra ID) Infrastructure | 3/3 | Complete   | 2026-07-02 |
 | 5. RBAC Authorization Infrastructure | 4/4 | Complete   | 2026-07-02 |
-| 6. Tenancy & Organization Foundation | 1/4 | In Progress|  |
+| 6. Tenancy & Organization Foundation | 3/4 | In Progress|  |
 | 7. Project Foundation | 0/3 | Not started | - |
 | 8. AI Platform Port & Event/Extraction Seams | 0/3 | Not started | - |
 | 9. 14-Domain Scaffolding & Boundary Enforcement | 0/3 | Not started | - |
