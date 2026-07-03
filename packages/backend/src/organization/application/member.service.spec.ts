@@ -5,13 +5,17 @@ import { MemberService } from './member.service';
 const mockMemberRepo = {
   findManyByOrg: vi.fn(),
   upsertMember: vi.fn(),
-  softDelete: vi.fn(),
   findById: vi.fn(),
+};
+
+// Interactive-transaction client — removeMember counts + deletes atomically here.
+const mockTx = {
+  organizationMember: { count: vi.fn(), updateMany: vi.fn() },
 };
 
 const mockPrisma = {
   user: { findFirst: vi.fn() },
-  organizationMember: { count: vi.fn() },
+  $transaction: vi.fn().mockImplementation(async (fn: (tx: unknown) => unknown) => fn(mockTx)),
 };
 
 const mockCtx = {
@@ -25,8 +29,10 @@ describe('MemberService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Re-arm ctx mock after clearAllMocks wipes implementations
+    // Re-arm mocks after clearAllMocks resets call history
     mockCtx.getOrganizationId.mockReturnValue('org-123');
+    mockCtx.getUserId.mockReturnValue('caller-user-id');
+    mockPrisma.$transaction.mockImplementation(async (fn: (tx: unknown) => unknown) => fn(mockTx));
     service = new MemberService(mockMemberRepo as never, mockPrisma as never, mockCtx as never);
   });
 
@@ -52,22 +58,31 @@ describe('MemberService', () => {
   });
 
   // ── Test 3: removeMember — LAST_MEMBER_REMOVAL guardrail (D-15) ─────────────
-  it('removeMember — active member count is 1 → throws ForbiddenException with LAST_MEMBER_REMOVAL; softDelete never called', async () => {
-    mockPrisma.organizationMember.count.mockResolvedValue(1);
+  it('removeMember — active member count is 1 → throws ForbiddenException with LAST_MEMBER_REMOVAL; no delete issued', async () => {
+    mockTx.organizationMember.count.mockResolvedValue(1);
 
     await expect(service.removeMember('org-123', 'member-1')).rejects.toMatchObject({
       response: { errorCode: expect.stringContaining('LAST_MEMBER_REMOVAL') },
     });
-    expect(mockMemberRepo.softDelete).not.toHaveBeenCalled();
+    expect(mockTx.organizationMember.updateMany).not.toHaveBeenCalled();
   });
 
   // ── Test 4: removeMember — happy path (count > 1) ───────────────────────────
-  it('removeMember — active member count is 2 → softDelete called with memberId; no exception', async () => {
-    mockPrisma.organizationMember.count.mockResolvedValue(2);
+  it('removeMember — active member count is 2 → scoped updateMany soft-deletes the member within the transaction', async () => {
+    mockTx.organizationMember.count.mockResolvedValue(2);
 
     await service.removeMember('org-123', 'member-1');
 
-    expect(mockMemberRepo.softDelete).toHaveBeenCalledWith('member-1');
+    // WR-04: count + delete run inside a single Serializable transaction (TOCTOU-safe).
+    expect(mockPrisma.$transaction).toHaveBeenCalledWith(
+      expect.any(Function),
+      { isolationLevel: 'Serializable' },
+    );
+    // WR-02: delete is org-scoped so the raw tx client cannot cross tenant boundaries.
+    expect(mockTx.organizationMember.updateMany).toHaveBeenCalledWith({
+      where: { id: 'member-1', organizationId: 'org-123', deletedAt: null },
+      data: expect.objectContaining({ status: 'REMOVED', deletedBy: 'caller-user-id' }),
+    });
   });
 
   // ── Test 5: listMembers — delegates to scoped repository ────────────────────

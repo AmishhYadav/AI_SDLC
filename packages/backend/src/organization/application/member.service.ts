@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { OrganizationMember, PrismaService } from '@repo/database';
+import { OrganizationMember, Prisma, PrismaService } from '@repo/database';
 import { TenantContextService } from '../../tenancy/tenant-context.service';
 import { TENANT_ERROR_CODES } from '../../tenancy/tenancy-error-codes';
 import { MemberRepository } from '../persistence/member.repository';
@@ -60,23 +60,40 @@ export class MemberService {
   /**
    * Soft-deletes a member from the current organization.
    *
-   * Counts ACTIVE members first and blocks removal if count <= 1. (D-15)
-   * Sets status=REMOVED + deletedAt + deletedBy via MemberRepository.softDelete. (D-14)
+   * The last-ACTIVE-member count check and the soft-delete run inside a single
+   * Serializable transaction (D-15). Without this, two concurrent removals on a
+   * 2-member org could both observe activeCount=2, both pass the guard, and both
+   * delete — leaving zero active members (TOCTOU). Serializable isolation forces
+   * one of the racing transactions to abort.
+   *
+   * The delete is a scoped updateMany (id + organizationId + deletedAt:null) so
+   * the raw transaction client — which does not run the $extends org filter —
+   * still cannot cross tenant boundaries. Sets status=REMOVED + deletedAt +
+   * deletedBy. (D-14)
    */
   async removeMember(id: string, memberId: string): Promise<void> {
     const organizationId = this.assertPathMatchesContext(id);
+    const actorUserId = this.ctx.getUserId() ?? null;
 
-    const activeCount = await this.prisma.organizationMember.count({
-      where: { organizationId, status: 'ACTIVE', deletedAt: null },
-    });
-    if (activeCount <= 1) {
-      throw new ForbiddenException({
-        errorCode: TENANT_ERROR_CODES.LAST_MEMBER_REMOVAL,
-        message: 'Cannot remove the last active member of an organization.',
-      });
-    }
+    await this.prisma.$transaction(
+      async (tx) => {
+        const activeCount = await tx.organizationMember.count({
+          where: { organizationId, status: 'ACTIVE', deletedAt: null },
+        });
+        if (activeCount <= 1) {
+          throw new ForbiddenException({
+            errorCode: TENANT_ERROR_CODES.LAST_MEMBER_REMOVAL,
+            message: 'Cannot remove the last active member of an organization.',
+          });
+        }
 
-    await this.memberRepo.softDelete(memberId);
+        await tx.organizationMember.updateMany({
+          where: { id: memberId, organizationId, deletedAt: null },
+          data: { status: 'REMOVED', deletedAt: new Date(), deletedBy: actorUserId },
+        });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   /**

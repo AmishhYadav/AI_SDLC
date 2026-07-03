@@ -7,8 +7,8 @@ import { TenantedPrismaService } from '../../tenancy/tenanted-prisma.service';
 /**
  * Repository for OrganizationMember.
  *
- * - findManyByOrg / findById / softDelete use TenantedPrismaService.client
- *   so the $extends hook auto-injects organizationId + deletedAt:null.
+ * - findManyByOrg / findById use TenantedPrismaService.client so the $extends
+ *   hook auto-injects organizationId + deletedAt:null.
  * - upsertMember uses raw PrismaService to avoid the extension's where-injection
  *   conflicting with upsert's unique-key argument (RESEARCH A3).
  */
@@ -28,13 +28,6 @@ export class MemberRepository extends BaseRepository {
 
   findById(id: string): Promise<OrganizationMember | null> {
     return this.scopedPrisma.client.organizationMember.findFirst({ where: { id } });
-  }
-
-  async softDelete(id: string): Promise<void> {
-    await this.scopedPrisma.client.organizationMember.update({
-      where: { id },
-      data: { ...this.getSoftDeleteData(), status: 'REMOVED' },
-    });
   }
 
   /**
