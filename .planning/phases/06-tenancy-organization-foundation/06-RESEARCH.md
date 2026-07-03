@@ -780,16 +780,18 @@ describe.skipIf(!realDbAvailable)('Tenant Isolation (real DB) (TENANT-06)', () =
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **`upsert` extension behavior (A3 above)**
-   - What we know: Prisma `upsert` has both a `where` (unique key) and `create`/`update` sections. The extension's args mutation on `$allModels.$allOperations` would affect the `where` argument.
-   - What's unclear: Whether injecting `organizationId` into `upsert.where` breaks the unique-key resolution.
-   - Recommendation: During Wave 1, write a unit test that calls `upsert` on `OrganizationMember` via `TenantedPrismaService` and confirm the behavior. If it breaks, use raw `PrismaService` for all upsert operations and document the bypass explicitly.
+Both questions were resolved by taking the conservative implementation path in the plans; neither leaves an unknown reaching execution.
 
-2. **`TenantedPrismaService` return type complexity**
-   - What we know: `prisma.$extends(...)` returns a complex inferred type that does not simply extend `PrismaService`. Injecting it as a typed DI token requires care.
-   - Recommendation: Define a `TENANTED_PRISMA_TOKEN` injection token and expose the extended client as `client: PrismaClient` (with `as unknown as PrismaClient` type assertion) to avoid DI type conflicts. This is a common pattern in the ecosystem.
+1. **`upsert` extension behavior (A3 above)** — **(RESOLVED)**
+   - What we knew: Prisma `upsert` has both a `where` (unique key) and `create`/`update` sections. The extension's args mutation on `$allModels.$allOperations` would affect the `where` argument.
+   - What was unclear: Whether injecting `organizationId` into `upsert.where` breaks the unique-key resolution.
+   - **Resolution:** Avoid the risk entirely — `MemberRepository.upsertMember` uses the **raw** `PrismaService` (injected alongside the scoped client), never `TenantedPrismaService`, so the extension never touches `upsert.where`. Locked in Plan 06-03 (Task 1) with an explicit acceptance criterion (`organizationMember.upsert` on `this.prisma`, not `this.scopedPrisma.client`). No empirical spike needed.
+
+2. **`TenantedPrismaService` return type complexity** — **(RESOLVED)**
+   - What we knew: `prisma.$extends(...)` returns a complex inferred type that does not simply extend `PrismaService`. Injecting it as a typed DI token requires care.
+   - **Resolution:** Expose the extended client as `client: PrismaClient` using an `as unknown as PrismaClient` assertion, consumed via the `TenantedPrismaService` provider. Locked in Plan 06-01. Callers use `scopedPrisma.client.<model>` — no DI type conflict.
 
 ---
 
