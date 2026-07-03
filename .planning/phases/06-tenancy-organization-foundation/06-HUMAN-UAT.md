@@ -26,12 +26,22 @@ expected: |
   (f) POST /api/v1/organizations → 201; creator is ACTIVE member with joinedAt; GET /mine returns it
 result: [pending]
 
+### 2. Last-Member Removal Concurrency (WR-04 fix)
+expected: |
+  The last-member removal guard now runs count + soft-delete inside one
+  Serializable transaction (member.service removeMember). Confirm under
+  concurrent load that an organization can never be driven to zero ACTIVE
+  members, and that the deployment/DB layer retries on Postgres serialization
+  failures (SQLSTATE 40001) so legitimate concurrent removals don't surface
+  as hard errors to clients.
+result: [pending]
+
 ## Summary
 
-total: 1
+total: 2
 passed: 0
 issues: 0
-pending: 1
+pending: 2
 skipped: 0
 blocked: 0
 
