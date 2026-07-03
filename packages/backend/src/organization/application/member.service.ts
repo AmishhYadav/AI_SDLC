@@ -30,8 +30,8 @@ export class MemberService {
    * Throws USER_NOT_FOUND if no User row exists with the given email — never
    * creates a User row on-the-fly. (D-13)
    */
-  async addMember(email: string): Promise<OrganizationMember> {
-    const organizationId = this.ctx.getOrganizationId()!;
+  async addMember(id: string, email: string): Promise<OrganizationMember> {
+    const organizationId = this.assertPathMatchesContext(id);
 
     const user = await this.prisma.user.findFirst({
       where: { email, deletedAt: null },
@@ -51,7 +51,8 @@ export class MemberService {
    * Lists all active members of the current organization.
    * The $extends hook auto-injects organizationId + deletedAt:null filtering.
    */
-  listMembers(): Promise<OrganizationMember[]> {
+  listMembers(id: string): Promise<OrganizationMember[]> {
+    this.assertPathMatchesContext(id);
     return this.memberRepo.findManyByOrg();
   }
 
@@ -61,8 +62,8 @@ export class MemberService {
    * Counts ACTIVE members first and blocks removal if count <= 1. (D-15)
    * Sets status=REMOVED + deletedAt + deletedBy via MemberRepository.softDelete. (D-14)
    */
-  async removeMember(memberId: string): Promise<void> {
-    const organizationId = this.ctx.getOrganizationId()!;
+  async removeMember(id: string, memberId: string): Promise<void> {
+    const organizationId = this.assertPathMatchesContext(id);
 
     const activeCount = await this.prisma.organizationMember.count({
       where: { organizationId, status: 'ACTIVE', deletedAt: null },
@@ -75,5 +76,24 @@ export class MemberService {
     }
 
     await this.memberRepo.softDelete(memberId);
+  }
+
+  /**
+   * Enforces path/header consistency: the `:id` path param must match the
+   * active CLS organizationId set by TenantGuard. Prevents a client from
+   * targeting one org in the URL while operating on another via the
+   * X-Organization-Id header (mirrors OrganizationService.findById). (T-06-12)
+   *
+   * Returns the validated organizationId so callers avoid a redundant CLS read.
+   */
+  private assertPathMatchesContext(id: string): string {
+    const organizationId = this.ctx.getOrganizationId();
+    if (id !== organizationId) {
+      throw new ForbiddenException({
+        errorCode: TENANT_ERROR_CODES.ORG_ACCESS_DENIED,
+        message: 'Access denied.',
+      });
+    }
+    return organizationId;
   }
 }

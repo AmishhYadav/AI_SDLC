@@ -57,24 +57,24 @@ export class OrganizationController {
   @Post('/:id/members')
   @RequirePermissions('organization:manage')
   async addMember(
-    @Param('id') _id: string,
+    @Param('id') id: string,
     @Body() dto: AddMemberDto,
   ): Promise<MemberResponseDto> {
-    const member = await this.memberService.addMember(dto.email);
+    const member = await this.memberService.addMember(id, dto.email);
     return MemberResponseDto.from(member);
   }
 
   @Get('/:id/members')
   @RequirePermissions('organization:read')
-  async listMembers(@Param('id') _id: string): Promise<MemberResponseDto[]> {
-    const members = await this.memberService.listMembers();
+  async listMembers(@Param('id') id: string): Promise<MemberResponseDto[]> {
+    const members = await this.memberService.listMembers(id);
     return members.map(MemberResponseDto.from);
   }
 
   @Delete('/:id/members/:memberId')
   @RequirePermissions('organization:manage')
   @HttpCode(204)
-  removeMember(@Param('id') _id: string, @Param('memberId') memberId: string) {
-    return this.memberService.removeMember(memberId);
+  removeMember(@Param('id') id: string, @Param('memberId') memberId: string) {
+    return this.memberService.removeMember(id, memberId);
   }
 }

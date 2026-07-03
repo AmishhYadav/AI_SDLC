@@ -34,7 +34,7 @@ describe('MemberService', () => {
   it('addMember — user not found → throws NotFoundException with USER_NOT_FOUND; upsertMember never called', async () => {
     mockPrisma.user.findFirst.mockResolvedValue(null);
 
-    await expect(service.addMember('nonexistent@test.com')).rejects.toMatchObject({
+    await expect(service.addMember('org-123', 'nonexistent@test.com')).rejects.toMatchObject({
       response: { errorCode: expect.stringContaining('USER_NOT_FOUND') },
     });
     expect(mockMemberRepo.upsertMember).not.toHaveBeenCalled();
@@ -45,7 +45,7 @@ describe('MemberService', () => {
     mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1' });
     mockMemberRepo.upsertMember.mockResolvedValue({ id: 'member-1', userId: 'user-1', status: 'ACTIVE' });
 
-    await service.addMember('existing@test.com');
+    await service.addMember('org-123', 'existing@test.com');
 
     expect(mockMemberRepo.upsertMember).toHaveBeenCalledWith('org-123', 'user-1');
   });
@@ -54,7 +54,7 @@ describe('MemberService', () => {
   it('removeMember — active member count is 1 → throws ForbiddenException with LAST_MEMBER_REMOVAL; softDelete never called', async () => {
     mockPrisma.organizationMember.count.mockResolvedValue(1);
 
-    await expect(service.removeMember('member-1')).rejects.toMatchObject({
+    await expect(service.removeMember('org-123', 'member-1')).rejects.toMatchObject({
       response: { errorCode: expect.stringContaining('LAST_MEMBER_REMOVAL') },
     });
     expect(mockMemberRepo.softDelete).not.toHaveBeenCalled();
@@ -64,7 +64,7 @@ describe('MemberService', () => {
   it('removeMember — active member count is 2 → softDelete called with memberId; no exception', async () => {
     mockPrisma.organizationMember.count.mockResolvedValue(2);
 
-    await service.removeMember('member-1');
+    await service.removeMember('org-123', 'member-1');
 
     expect(mockMemberRepo.softDelete).toHaveBeenCalledWith('member-1');
   });
@@ -74,9 +74,17 @@ describe('MemberService', () => {
     const fakeMembers = [{ id: 'm1' }, { id: 'm2' }];
     mockMemberRepo.findManyByOrg.mockResolvedValue(fakeMembers);
 
-    const result = await service.listMembers();
+    const result = await service.listMembers('org-123');
 
     expect(result).toEqual(fakeMembers);
     expect(mockMemberRepo.findManyByOrg).toHaveBeenCalled();
+  });
+
+  // ── Test 6: path/header consistency (WR-02) ─────────────────────────────────
+  it('addMember — path id differs from CLS organizationId → throws ForbiddenException with ORG_ACCESS_DENIED; user never looked up', async () => {
+    await expect(service.addMember('org-OTHER', 'existing@test.com')).rejects.toMatchObject({
+      response: { errorCode: expect.stringContaining('ORG_ACCESS_DENIED') },
+    });
+    expect(mockPrisma.user.findFirst).not.toHaveBeenCalled();
   });
 });
