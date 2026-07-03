@@ -21,6 +21,9 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { AuthAuditContextProvider } from './auth/auth-audit-context-provider';
 import { AuthorizationModule } from './authorization/authorization.module';
 import { PermissionsGuard } from './authorization/permissions.guard';
+import { TenancyModule } from './tenancy/tenancy.module';
+import { TenantGuard } from './tenancy/tenant.guard';
+import { OrganizationModule } from './organization/organization.module';
 
 @Module({
   imports: [
@@ -90,6 +93,8 @@ import { PermissionsGuard } from './authorization/permissions.guard';
     HealthModule,
     AuthModule,
     AuthorizationModule,
+    TenancyModule,
+    OrganizationModule,
   ],
   providers: [
     // ORDER MATTERS: NestJS executes APP_FILTERs in reverse registration order,
@@ -122,6 +127,11 @@ import { PermissionsGuard } from './authorization/permissions.guard';
     // D-05 (Phase 5): PermissionsGuard is third — JwtAuthGuard must run first to populate
     // request.user; PermissionsGuard then enforces @RequirePermissions codes (RBAC-03).
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    // D-04 (Phase 6): TenantGuard is fourth — runs after PermissionsGuard. Reads request.user
+    // (set by JwtAuthGuard) + X-Organization-Id header. Validates ACTIVE membership and
+    // populates CLS: userId, organizationId, organizationMemberId. @NoTenantScope() opt-out.
+    // Default-on fail-closed; forgetting the decorator never silently disables isolation. (TENANT-01, TENANT-02)
+    { provide: APP_GUARD, useClass: TenantGuard },
 
     // INTERCEPTOR REGISTRATION ORDER: APP_INTERCEPTOR response-side execution is LIFO
     // (last-registered runs first on response path). ResponseEnvelopeInterceptor is
@@ -131,8 +141,7 @@ import { PermissionsGuard } from './authorization/permissions.guard';
     { provide: APP_INTERCEPTOR, useClass: ResponseEnvelopeInterceptor },
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
 
-    // Audit context provider — Phase 4 returns userId via CLS; audit writes still skip
-    // until Phase 6 provides organizationId (D-04).
+    // Audit context provider — Phase 6 supplies userId + organizationId from CLS (D-16).
     { provide: IAuditContextProvider, useClass: AuthAuditContextProvider },
 
     // Idempotency store — in-memory no-op until Redis lands (D-09).
