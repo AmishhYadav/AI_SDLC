@@ -8,6 +8,25 @@ import { TENANT_ERROR_CODES } from './tenancy-error-codes';
  * Org-owned models with a direct organizationId FK (camelCase Prisma model names).
  * 'organization' is intentionally absent — Organization has no organizationId FK;
  * it IS the root entity.
+ *
+ * ⚠️ FAIL-OPEN ON OMISSION — MAINTENANCE-CRITICAL (WR-05):
+ * Scoping (and the D-08 fail-closed guard) is applied ONLY to models listed here.
+ * A model that has an `organizationId` column but is absent from this set is NOT
+ * scoped: the extension passes its queries through unmodified, yielding a
+ * full-table cross-tenant read/write with no error. This is a deliberate
+ * allowlist (ADR-001) — the schema declares many org-owned models for future
+ * phases that are not yet reachable through any repository, and scoping them
+ * eagerly is out of scope for this phase.
+ *
+ * INVARIANT: before a new org-owned model becomes reachable via the scoped
+ * client (i.e. a repository extends BaseRepository and queries it), its
+ * camelCase name MUST be added here. Adding a model to the schema without
+ * adding it here silently disables tenant isolation for that model.
+ *
+ * A CI guardrail that cross-checks every `organizationId`-bearing model against
+ * this set (or an explicit UNSCOPED opt-out list) is the durable fix and is
+ * tracked as follow-up; it is intentionally deferred because a naive
+ * completeness assertion would fail today against the many not-yet-wired models.
  */
 const ORG_SCOPED_MODELS = new Set([
   'organizationMember',
