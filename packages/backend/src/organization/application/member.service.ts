@@ -44,7 +44,8 @@ export class MemberService {
       });
     }
 
-    return this.memberRepo.upsertMember(organizationId, user.id);
+    const actorUserId = this.ctx.getUserId()!;
+    return this.memberRepo.upsertMember(organizationId, user.id, actorUserId);
   }
 
   /**

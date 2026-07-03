@@ -47,7 +47,8 @@ describe('MemberService', () => {
 
     await service.addMember('org-123', 'existing@test.com');
 
-    expect(mockMemberRepo.upsertMember).toHaveBeenCalledWith('org-123', 'user-1');
+    // WR-03: audit attribution records the acting member (caller-user-id), not the invited user.
+    expect(mockMemberRepo.upsertMember).toHaveBeenCalledWith('org-123', 'user-1', 'caller-user-id');
   });
 
   // ── Test 3: removeMember — LAST_MEMBER_REMOVAL guardrail (D-15) ─────────────

@@ -45,8 +45,15 @@ export class MemberRepository extends BaseRepository {
    *
    * On create: status=ACTIVE, joinedAt=now().
    * On update (re-add of removed member): reactivate with status=ACTIVE, deletedAt=null.
+   *
+   * Audit columns record `actorUserId` (the member performing the add), NOT
+   * `userId` (the member being added). (CLAUDE.md §14, D-16)
    */
-  upsertMember(organizationId: string, userId: string): Promise<OrganizationMember> {
+  upsertMember(
+    organizationId: string,
+    userId: string,
+    actorUserId: string,
+  ): Promise<OrganizationMember> {
     return this.prisma.organizationMember.upsert({
       where: { organizationId_userId: { organizationId, userId } },
       create: {
@@ -54,13 +61,13 @@ export class MemberRepository extends BaseRepository {
         userId,
         status: 'ACTIVE',
         joinedAt: new Date(),
-        createdBy: userId,
+        createdBy: actorUserId,
       },
       update: {
         status: 'ACTIVE',
         deletedAt: null,
         joinedAt: new Date(),
-        updatedBy: userId,
+        updatedBy: actorUserId,
       },
     });
   }
