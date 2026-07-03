@@ -185,8 +185,21 @@ Plans:
   4. A two-organization isolation test proves organization A never receives organization B's data.
   5. The tenant-enforcement mechanism (PostgreSQL RLS vs Prisma client extension) is decided and recorded as an ADR, and an org-scoped, soft-delete-aware `BaseRepository` is available to domain repositories.
 
-**Plans**: TBD (~4 estimated)
-**Research flag**: Highest-risk phase. The RLS-vs-Prisma-client-extension enforcement mechanism and ALS tenant-context propagation across async boundaries warrant a focused decision with isolation tests as the acceptance gate (MEDIUM confidence). Enforcement impl may be deferred; the context must exist now.
+**Plans**: 4 plans
+
+Plans:
+**Wave 1** *(no dependencies)*
+
+- [ ] 06-01-PLAN.md — Tenancy core: error codes, @NoTenantScope, TenantContextService, TenantedPrismaService ($extends), BaseRepository, unit tests (TENANT-01, TENANT-02, SEAM-05)
+
+**Wave 2** *(blocks on Wave 1; plans 02 and 03 run in parallel — disjoint files)*
+
+- [ ] 06-02-PLAN.md — TenantGuard (APP_GUARD after PermissionsGuard), TenancyModule, D-16 AuthAuditContextProvider wiring, guard unit tests (TENANT-01, TENANT-02)
+- [ ] 06-03-PLAN.md — Organization data layer: DTOs, OrganizationRepository (raw), MemberRepository (extends BaseRepository), OrganizationService, MemberService, MemberService unit tests (TENANT-03, TENANT-04, TENANT-05)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 06-04-PLAN.md — OrganizationController (6 routes), OrganizationModule, AppModule wiring, two-org isolation integration test, CI env var, ADR-001 (TENANT-03..TENANT-07)
 
 ### Phase 7: Project Foundation
 
