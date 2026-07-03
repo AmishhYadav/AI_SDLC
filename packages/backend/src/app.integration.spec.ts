@@ -13,16 +13,24 @@ import { GetCurrentUser } from './auth/decorators/current-user.decorator';
 import type { CurrentUser } from './auth/current-user.type';
 import { RequirePermissions } from './authorization/decorators/require-permissions.decorator';
 
+// Placeholder connection string used for mock-only test runs. Kept as a single
+// named constant so the default assignment below and the real-DB detection share
+// one source of truth (no drifting magic strings).
+const MOCK_DATABASE_URL = 'postgresql://mock:mock@localhost:5432/mock';
+
 // Satisfy Zod validation in AppConfigModule before TestingModule.compile()
-process.env['DATABASE_URL'] = process.env['DATABASE_URL'] ?? 'postgresql://mock:mock@localhost:5432/mock';
+process.env['DATABASE_URL'] = process.env['DATABASE_URL'] ?? MOCK_DATABASE_URL;
 process.env['NODE_ENV'] = process.env['NODE_ENV'] ?? 'test';
 process.env['CORS_ORIGINS'] = process.env['CORS_ORIGINS'] ?? 'http://localhost:3001';
 // Phase 4: AUTH_MODE must be set before any TestingModule compiles so Zod schema parses it
 process.env['AUTH_MODE'] = process.env['AUTH_MODE'] ?? 'stub';
 
 // Phase 5 RBAC real-DB detection (evaluated once at module load time).
-// A real DATABASE_URL is any URL that does NOT contain 'mock' — i.e. a real Postgres endpoint.
-const realDbAvailable = !!process.env['DATABASE_URL'] && !process.env['DATABASE_URL'].includes('mock');
+// A real DATABASE_URL is any value other than the MOCK_DATABASE_URL placeholder,
+// matched EXACTLY (not by 'mock' substring) so a legitimate Postgres endpoint whose
+// host/db name merely contains 'mock' is not misclassified as unavailable.
+const realDbAvailable =
+  !!process.env['DATABASE_URL'] && process.env['DATABASE_URL'] !== MOCK_DATABASE_URL;
 // D-09 silent-skip guard: when set to '1' in CI the non-skippable guard test fails loudly
 // if DATABASE_URL turns out to be mock/absent, preventing a false-green CI run.
 const realDbRequired = process.env['RBAC_REALDB_REQUIRED'] === '1';
@@ -292,7 +300,7 @@ describe('Phase 3 Rate Limiting (INFRA-12)', () => {
           LOG_LEVEL: 'info',
           NODE_ENV: 'test',
           PORT: 3000,
-          DATABASE_URL: 'postgresql://mock:mock@localhost:5432/mock',
+          DATABASE_URL: MOCK_DATABASE_URL,
         };
         return map[key];
       },
