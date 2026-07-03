@@ -12,6 +12,7 @@ import { Public } from './auth/decorators/public.decorator';
 import { GetCurrentUser } from './auth/decorators/current-user.decorator';
 import type { CurrentUser } from './auth/current-user.type';
 import { RequirePermissions } from './authorization/decorators/require-permissions.decorator';
+import { NoTenantScope } from './tenancy/decorators/no-tenant-scope.decorator';
 
 // Placeholder connection string used for mock-only test runs. Kept as a single
 // named constant so the default assignment below and the real-DB detection share
@@ -34,14 +35,27 @@ const realDbAvailable =
 // D-09 silent-skip guard: when set to '1' in CI the non-skippable guard test fails loudly
 // if DATABASE_URL turns out to be mock/absent, preventing a false-green CI run.
 const realDbRequired = process.env['RBAC_REALDB_REQUIRED'] === '1';
+// Phase 6 (TENANT-06): parallel guard for the tenant isolation real-DB block.
+const tenantRealDbRequired = process.env['TENANT_REALDB_REQUIRED'] === '1';
 
 // @Global() is required because the real PrismaModule is @Global() in @repo/database.
 // HealthModule (now imported by AppModule) relies on PrismaService being globally provided.
 // Without @Global(), the MockPrismaModule's PrismaService export is scoped to AppModule
 // only and cannot be resolved by HealthModule's PrismaHealthIndicator.
+//
+// Phase 6: TenantedPrismaService (now part of TenancyModule imported by AppModule) calls
+// prisma.$extends() in its constructor. The mock must include a no-op $extends so that
+// TenantedPrismaService can instantiate without a real Prisma client. The returned stub
+// object is never used for queries in mock-mode tests.
 @Global()
 @Module({
-  providers: [{ provide: PrismaService, useValue: { onModuleInit: async () => {} } }],
+  providers: [{
+    provide: PrismaService,
+    useValue: {
+      onModuleInit: async () => {},
+      $extends: () => ({}),
+    },
+  }],
   exports: [PrismaService],
 })
 class MockPrismaModule {}
@@ -56,6 +70,7 @@ class TestDto {
 }
 
 @Controller({ path: 'test', version: '1' })
+@NoTenantScope()
 class TestController {
   @Post('echo')
   echo(@Body() body: TestDto): TestDto {
@@ -69,6 +84,7 @@ class TestController {
 // - GET /api/v1/auth-test/protected: requires auth; returns resolved CurrentUser via @GetCurrentUser()
 
 @Controller({ path: 'auth-test', version: '1' })
+@NoTenantScope()
 class AuthTestController {
   @Get('public')
   @Public()
@@ -90,6 +106,7 @@ class AuthTestController {
 // - GET /api/v1/rbac-test/manage: @RequirePermissions('organization:manage')
 
 @Controller({ path: 'rbac-test', version: '1' })
+@NoTenantScope()
 class RbacTestController {
   @Get('read')
   @RequirePermissions('organization:read')
@@ -113,6 +130,12 @@ class RbacTestController {
 // so this guard passes trivially and the real-DB block below skips as expected.
 it('real-DB RBAC block must actually execute when RBAC_REALDB_REQUIRED is set', () => {
   if (realDbRequired) expect(realDbAvailable).toBe(true);
+});
+
+// Phase 6 (TENANT-06): parallel guard for the tenant isolation real-DB block.
+// Fails loudly in CI if TENANT_REALDB_REQUIRED=1 but DATABASE_URL is mock/absent.
+it('real-DB tenant isolation block must actually execute when TENANT_REALDB_REQUIRED is set', () => {
+  if (tenantRealDbRequired) expect(realDbAvailable).toBe(true);
 });
 
 describe('App bootstrap (integration)', () => {
@@ -584,5 +607,204 @@ describe.skipIf(!realDbAvailable)('RBAC Authorization (real DB) (RBAC-02..RBAC-0
     const { status } = await request(rbacApp.getHttpServer())
       .get('/api/v1/rbac-test/read');
     expect(status).toBe(401);
+  });
+});
+
+// ── Phase 6 Tenant Isolation (TENANT-06) ─────────────────────────────────
+// Proves the complete tenant isolation path end-to-end against a real Postgres
+// database. Skipped on local mock-only runs (realDbAvailable=false). Runs in CI
+// where a real DATABASE_URL is present, and the non-skippable guard above turns
+// any env mis-wiring into a red build (TENANT-06, T-06-16, T-06-19).
+//
+// This describe block does NOT call .overrideModule(PrismaModule).useModule(MockPrismaModule).
+// It uses the real PrismaModule so TenantedPrismaService queries hit Postgres.
+describe.skipIf(!realDbAvailable)('Tenant Isolation (real DB) (TENANT-06)', () => {
+  let tenantApp: INestApplication;
+  let prisma: PrismaService;
+  let orgAId: string;
+  let orgBId: string;
+  let userAEmail: string;
+  let userBEmail: string;
+  let invitedUserEmail: string;
+  let creatorEmail: string;
+  let createdOrgId: string | undefined;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+      // NO mock override — real PrismaModule, real DB, real TenantGuard
+    }).compile();
+    tenantApp = moduleRef.createNestApplication();
+    tenantApp.setGlobalPrefix('api');
+    tenantApp.enableVersioning({ type: VersioningType.URI });
+    await tenantApp.init();
+    prisma = tenantApp.get(PrismaService);
+
+    userAEmail = 'tenant-a@isolation.test';
+    userBEmail = 'tenant-b@isolation.test';
+    invitedUserEmail = 'tenant-invited@isolation.test';
+    creatorEmail = 'tenant-creator@isolation.test';
+
+    // Pre-cleanup: idempotent cleanup of any leftover fixtures from a prior failed run.
+    for (const email of [userAEmail, userBEmail, invitedUserEmail, creatorEmail]) {
+      const u = await prisma.user.findUnique({ where: { email } });
+      if (u) {
+        await prisma.organizationMember.deleteMany({ where: { userId: u.id } });
+        await prisma.user.delete({ where: { id: u.id } });
+      }
+    }
+    await prisma.organization.deleteMany({
+      where: { name: { in: ['Isolation Org A', 'Isolation Org B', 'Created Via Api'] } },
+    });
+
+    // Create org A and org B
+    const orgA = await prisma.organization.create({
+      data: { name: 'Isolation Org A', slug: 'isolation-org-a', createdBy: 'system' },
+    });
+    const orgB = await prisma.organization.create({
+      data: { name: 'Isolation Org B', slug: 'isolation-org-b', createdBy: 'system' },
+    });
+    orgAId = orgA.id;
+    orgBId = orgB.id;
+
+    // Create platform User rows
+    const userA = await prisma.user.create({
+      data: { email: userAEmail, firstName: 'TenantA', status: 'ACTIVE' },
+    });
+    const userB = await prisma.user.create({
+      data: { email: userBEmail, firstName: 'TenantB', status: 'ACTIVE' },
+    });
+    const invitedUser = await prisma.user.create({
+      data: { email: invitedUserEmail, firstName: 'Invited', status: 'ACTIVE' },
+    });
+    // Creator has a platform User row but NO membership — test (f) creates their first org.
+    await prisma.user.create({
+      data: { email: creatorEmail, firstName: 'Creator', status: 'ACTIVE' },
+    });
+
+    // Create ACTIVE memberships for orgA and orgB
+    await prisma.organizationMember.create({
+      data: {
+        organizationId: orgAId,
+        userId: userA.id,
+        status: 'ACTIVE',
+        joinedAt: new Date(),
+        createdBy: userA.id,
+      },
+    });
+    await prisma.organizationMember.create({
+      data: {
+        organizationId: orgBId,
+        userId: userB.id,
+        status: 'ACTIVE',
+        joinedAt: new Date(),
+        createdBy: userB.id,
+      },
+    });
+    // Create INVITED (non-ACTIVE) membership in orgA for test (e)
+    await prisma.organizationMember.create({
+      data: {
+        organizationId: orgAId,
+        userId: invitedUser.id,
+        status: 'INVITED',
+        createdBy: userA.id,
+      },
+    });
+  });
+
+  afterAll(async () => {
+    // Cleanup in reverse dependency order. Creator's membership (created by test (f)'s POST)
+    // is removed here via deleteMany-by-userId before the 'Created Via Api' org is deleted.
+    for (const email of [userAEmail, userBEmail, invitedUserEmail, creatorEmail]) {
+      const u = await prisma.user.findUnique({ where: { email } });
+      if (u) {
+        await prisma.organizationMember.deleteMany({ where: { userId: u.id } });
+        await prisma.user.delete({ where: { id: u.id } });
+      }
+    }
+    await prisma.organization.deleteMany({
+      where: { name: { in: ['Isolation Org A', 'Isolation Org B', 'Created Via Api'] } },
+    });
+    await tenantApp.close();
+  });
+
+  it('(a) allow: orgA member with correct x-organization-id can list orgA members (TENANT-04, TENANT-06)', async () => {
+    const { status, body } = await request(tenantApp.getHttpServer())
+      .get(`/api/v1/organizations/${orgAId}/members`)
+      .set('x-dev-user', userAEmail)
+      .set('x-organization-id', orgAId);
+    expect(status).toBe(200);
+    expect(body.success).toBe(true);
+  });
+
+  it('(b) cross-tenant deny: orgA member with x-organization-id=orgB returns 403 (TENANT-04, TENANT-06)', async () => {
+    // userA is NOT a member of orgB — TenantGuard must deny
+    const { status, body } = await request(tenantApp.getHttpServer())
+      .get(`/api/v1/organizations/${orgBId}/members`)
+      .set('x-dev-user', userAEmail)
+      .set('x-organization-id', orgBId);
+    expect(status).toBe(403);
+    expect(body.errorCode).toBe('TENANT.ORG_ACCESS_DENIED');
+  });
+
+  it('(c) isolation: orgA member list never contains orgB member data (TENANT-06 acceptance gate)', async () => {
+    const { body } = await request(tenantApp.getHttpServer())
+      .get(`/api/v1/organizations/${orgAId}/members`)
+      .set('x-dev-user', userAEmail)
+      .set('x-organization-id', orgAId);
+    // Extract userId values from returned members
+    const memberUserIds: string[] = (body.data ?? []).map((m: { userId: string }) => m.userId);
+    // orgB's member userId must never appear in orgA's member list
+    const orgBUser = await prisma.user.findUnique({ where: { email: userBEmail } });
+    if (orgBUser) {
+      expect(memberUserIds).not.toContain(orgBUser.id);
+    }
+  });
+
+  it('(d) missing header: tenant-scoped route without x-organization-id returns 403 TENANT.MISSING_ORG_HEADER (TENANT-01)', async () => {
+    const { status, body } = await request(tenantApp.getHttpServer())
+      .get(`/api/v1/organizations/${orgAId}/members`)
+      .set('x-dev-user', userAEmail);
+    // No x-organization-id header
+    expect(status).toBe(403);
+    expect(body.errorCode).toBe('TENANT.MISSING_ORG_HEADER');
+  });
+
+  it('(e) non-ACTIVE membership: INVITED status returns 403 TENANT.ORG_ACCESS_DENIED (TENANT-02)', async () => {
+    const { status, body } = await request(tenantApp.getHttpServer())
+      .get(`/api/v1/organizations/${orgAId}/members`)
+      .set('x-dev-user', invitedUserEmail)
+      .set('x-organization-id', orgAId);
+    expect(status).toBe(403);
+    expect(body.errorCode).toBe('TENANT.ORG_ACCESS_DENIED');
+  });
+
+  it('(f) create-org: authenticated user creates an org via POST and is recorded as an ACTIVE member; GET /mine returns it (TENANT-03, D-10, Success Criterion 2)', async () => {
+    // @NoTenantScope route: no x-organization-id header; identity from x-dev-user (stub auth).
+    // slug is alphanumeric (no hyphens) so it passes the CreateOrganizationDto validator.
+    const createRes = await request(tenantApp.getHttpServer())
+      .post('/api/v1/organizations')
+      .set('x-dev-user', creatorEmail)
+      .send({ name: 'Created Via Api', slug: 'createdviaapi' });
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.success).toBe(true);
+    expect(typeof createRes.body.data.id).toBe('string');
+    createdOrgId = createRes.body.data.id;
+
+    // D-10: creator is recorded as an ACTIVE member atomically, with joinedAt set
+    const creatorUser = await prisma.user.findUnique({ where: { email: creatorEmail } });
+    const membership = await prisma.organizationMember.findFirst({
+      where: { organizationId: createdOrgId, userId: creatorUser?.id, status: 'ACTIVE', deletedAt: null },
+    });
+    expect(membership).not.toBeNull();
+    expect(membership?.joinedAt).not.toBeNull();
+
+    // GET /mine returns the newly created org (proves list-my-orgs through the service)
+    const mineRes = await request(tenantApp.getHttpServer())
+      .get('/api/v1/organizations/mine')
+      .set('x-dev-user', creatorEmail);
+    expect(mineRes.status).toBe(200);
+    const mineIds: string[] = (mineRes.body.data ?? []).map((o: { id: string }) => o.id);
+    expect(mineIds).toContain(createdOrgId);
   });
 });
