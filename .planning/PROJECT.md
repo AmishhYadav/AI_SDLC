@@ -38,6 +38,7 @@ This is the first implementation milestone. Subsequent milestones (via `/gsd:new
 - ✓ NestJS monorepo tooling: Turborepo, ESLint 9 flat config, Prettier, Vitest 4 + SWC, GitHub Actions CI — Phase 01 (2026-06-30)
 - ✓ Platform kernel: NestJS bootstrap (global prefix, URI versioning), typed Zod config, structured error contract (exception filters + correlation-id middleware), full turbo pipeline — Phase 02 (2026-07-01)
 - ✓ RBAC authorization infrastructure: `@RequirePermissions()` decorator, `PermissionResolverService` (single-query, CLS-memoized, soft-delete/expiry-filtered), `PermissionsGuard` registered as global `APP_GUARD` after `JwtAuthGuard`, 403 `AUTHZ.PERMISSION_DENIED` error contract, and a real-DB RBAC integration test wired into CI (non-skippable guard) — Phase 05 (2026-07-02)
+- ✓ Tenancy & organization foundation: request-scoped tenant context (CLS/ALS via `TenantContextService`), `TenantGuard` (`APP_GUARD` after `PermissionsGuard`, validates ACTIVE membership from `X-Organization-Id`), `TenantedPrismaService` (`$extends` auto-injecting `organizationId` + soft-delete), soft-delete-aware `BaseRepository`, organization/member CRUD (RBAC-gated), enforcement-mechanism decision recorded in ADR-001, and a real-DB two-organization isolation test wired into CI — Phase 06 (2026-07-03). *Isolation test + last-member concurrency pending CI/real-DB confirmation (06-HUMAN-UAT.md).*
 
 ### Active
 
@@ -58,7 +59,7 @@ This is the first implementation milestone. Subsequent milestones (via `/gsd:new
 - [ ] Module scaffolding for all 14 domains (consistent layered structure)
 - [ ] Authentication infrastructure prepared for Microsoft Entra ID (SSO) integration
 - [x] RBAC authorization infrastructure (roles/permissions enforcement) — Phase 05
-- [ ] Organization foundation (organizations, members)
+- [x] Organization foundation (organizations, members) — Phase 06
 - [ ] Project foundation (projects, teams)
 - [ ] Architecture supports long-running workflows, AI orchestration, and microservice extraction without rewrites
 
@@ -138,4 +139,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-02 after Phase 05 (RBAC Authorization Infrastructure) completion*
+*Last updated: 2026-07-03 after Phase 06 (Tenancy & Organization Foundation) completion*
