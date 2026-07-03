@@ -213,7 +213,16 @@ Plans:
   3. A user can create teams within a project and manage team membership.
   4. A published `OrganizationPort`/project-summary contract in `contracts/` exposes org/project lookup to downstream domains.
 
-**Plans**: TBD (~3 estimated)
+**Plans**: 3 plans
+
+**Wave 1** *(no dependencies; plans 01 and 02 run in parallel — disjoint files)*
+
+- [ ] 07-01-PLAN.md — Project domain: Project CRUD + creator auto-add (OWNER ProjectMember) + ProjectMember lifecycle (add/list/soft-remove/reactivate)
+- [ ] 07-02-PLAN.md — Team domain: org-scoped Team CRUD + TeamMember lifecycle (raw PrismaService with explicit org nested filter)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 07-03-PLAN.md — OrganizationPort contract (src/contracts/organization/) + OrganizationPortAdapter + OrganizationModule port binding + AppModule wiring (ProjectModule, TeamModule)
 
 ### Phase 8: AI Platform Port & Event/Extraction Seams
 
