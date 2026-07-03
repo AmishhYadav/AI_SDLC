@@ -40,9 +40,10 @@ const UNIQUE_OPERATIONS = new Set(['findUnique', 'findUniqueOrThrow']);
  * in CLS (i.e., TenantGuard has not run), throws ForbiddenException with
  * TENANT.NO_ORG_CONTEXT — never a silent full-table read.
  *
- * The CLS is captured in a closure and read at query execution time (not at
- * service construction time), so the singleton service correctly reads the
- * per-request organizationId from AsyncLocalStorage on every query.
+ * A reference to ClsService is captured in a closure (as `clsRef`) and read at
+ * query execution time (not at service construction time), so the singleton
+ * service correctly reads the per-request organizationId from AsyncLocalStorage
+ * on every query.
  */
 @Injectable()
 export class TenantedPrismaService {
@@ -52,8 +53,12 @@ export class TenantedPrismaService {
     private readonly prisma: PrismaService,
     private readonly cls: ClsService,
   ) {
-    // Capture cls in closure — reads per-request ALS context at query time, not here
-    const cls = this.cls;
+    // Capture cls reference before entering the $extends closure.
+    // Using `clsRef` (not `cls`) avoids an OXC/SWC identifier-redeclaration error
+    // since `cls` is already declared as the constructor parameter in this scope.
+    // Inside $allOperations, `this` refers to the extension object (not the service),
+    // so the captured reference is required for per-request CLS reads.
+    const clsRef = this.cls;
 
     this.client = prisma.$extends({
       query: {
@@ -74,7 +79,7 @@ export class TenantedPrismaService {
               !NO_WHERE_OPERATIONS.has(operation) &&
               !UNIQUE_OPERATIONS.has(operation)
             ) {
-              const orgId = cls.get<string>('organizationId');
+              const orgId = clsRef.get<string>('organizationId');
 
               if (orgId === undefined || orgId === null) {
                 // D-08 fail-closed: no active org context on a scoped model operation
