@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/co
 import { GetCurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { CurrentUser } from '../../auth/current-user.type';
 import { NoTenantScope } from '../../tenancy/decorators/no-tenant-scope.decorator';
+import { RequirePermissions } from '../../authorization/decorators/require-permissions.decorator';
 import { OrganizationService } from '../application/organization.service';
 import { MemberService } from '../application/member.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
@@ -43,21 +44,25 @@ export class OrganizationController {
   }
 
   @Get('/:id')
+  @RequirePermissions('organization:read')
   getOrganization(@Param('id') id: string) {
     return this.organizationService.findById(id);
   }
 
   @Post('/:id/members')
+  @RequirePermissions('organization:manage')
   addMember(@Param('id') _id: string, @Body() dto: AddMemberDto) {
     return this.memberService.addMember(dto.email);
   }
 
   @Get('/:id/members')
+  @RequirePermissions('organization:read')
   listMembers(@Param('id') _id: string) {
     return this.memberService.listMembers();
   }
 
   @Delete('/:id/members/:memberId')
+  @RequirePermissions('organization:manage')
   @HttpCode(204)
   removeMember(@Param('id') _id: string, @Param('memberId') memberId: string) {
     return this.memberService.removeMember(memberId);
